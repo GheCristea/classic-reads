@@ -1,36 +1,242 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 Classic Reads
 
-## Getting Started
+A modern, responsive web application for browsing and discovering classic literature from Project Gutenberg's vast collection of over 70,000 free books.
 
-First, run the development server:
+![Classic Reads](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-blue)
+
+## ✨ Features
+
+### 🏠 **Beautiful Homepage**
+- Hero section with compelling book discovery message
+- Featured popular books carousel
+- Browse by interest categories
+- Responsive design optimized for all devices
+
+### 📖 **Comprehensive Book Browsing**
+- Browse 70,000+ free classic books
+- Advanced filtering by language, subject, copyright status
+- Sort by popularity, title (A-Z, Z-A)
+- Server-side pagination for optimal performance
+- Real-time search with debounced queries
+
+### 🔍 **Powerful Search**
+- Full-text search across titles, authors, and subjects
+- Dedicated search page with suggestions
+- Popular search terms and search tips
+- Instant results with comprehensive book information
+
+### 📚 **Detailed Book Pages**
+- Complete book information including authors, subjects, translators
+- Multiple download formats (EPUB, PDF, HTML, Plain Text)
+- Author information with birth/death years
+- Related books by the same author
+- Copyright status and download statistics
+
+### 🎨 **Modern UI/UX**
+- Clean, book-inspired design with warm color palette
+- Skeleton loading states for smooth user experience
+- Custom 404 page with helpful navigation options
+- Accessible design following WCAG guidelines
+- Mobile-first responsive layout
+
+## 🛠️ Technology Stack
+
+- **Framework:** Next.js 15 with App Router
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **UI Components:** Custom shadcn/ui components
+- **API:** Project Gutenberg via Gutendx API
+- **Icons:** Lucide React
+- **Deployment:** Vercel (recommended)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd classic-reads
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+### Build for Production
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📁 Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/                          # Next.js App Router
+│   ├── books/                    # Books listing and details
+│   │   ├── [id]/                 # Individual book pages
+│   │   └── _components/          # Book-related components
+│   ├── search/                   # Search functionality
+│   │   └── _components/
+│   ├── layout.tsx                # Root layout
+│   ├── page.tsx                  # Homepage
+│   ├── loading.tsx               # Global loading UI
+│   ├── not-found.tsx             # 404 page
+│   └── globals.css               # Global styles
+├── components/
+│   ├── ui/                       # Reusable UI components
+│   └── layout/                   # Layout components
+├── lib/
+│   ├── gutendx.ts               # API client functions
+│   └── utils.ts                 # Utility functions
+└── hooks/                       # Custom React hooks
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🌐 API Integration
 
-## Learn More
+The app integrates with the [Gutendx API](https://gutendex.com), which provides access to Project Gutenberg's collection:
 
-To learn more about Next.js, take a look at the following resources:
+- **No authentication required**
+- **Rate limiting:** Respectful usage (10 requests/minute recommended)
+- **Data format:** JSON responses
+- **Caching:** 5-minute cache for book listings, 1-hour for individual books
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Key Endpoints Used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/books` - List books with filters and pagination
+- `/books/{id}` - Get specific book details
 
-## Deploy on Vercel
+## 🎯 Key Features Implementation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Server-Side Rendering (SSR)
+- Homepage with popular books fetched at build time
+- Book detail pages with dynamic metadata
+- Search results rendered on the server for SEO
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Advanced Filtering
+- Multiple language selection
+- Subject/topic filtering
+- Copyright status filtering
+- Sort by popularity or alphabetical
+
+### Performance Optimizations
+- Server Components for initial data loading
+- Skeleton loading states
+- Optimized images with Next.js Image component
+- Automatic code splitting
+
+### Responsive Design
+- Mobile-first approach
+- Breakpoint-aware layouts
+- Touch-friendly interface
+- Optimized for screens from 320px to 4K
+
+## 🎨 Design System
+
+### Color Palette
+- **Primary:** Warm orange (#f97316) - book-inspired
+- **Secondary:** Neutral grays for text and backgrounds
+- **Accent:** Complementary blues for interactive elements
+
+### Typography
+- **Headings:** Clean, readable fonts optimized for screens
+- **Body:** Sans-serif for optimal readability
+- **Code:** Monospace for technical content
+
+### Components
+- Consistent button styles and sizes
+- Card-based layouts for content organization
+- Badge system for categories and metadata
+- Input controls with proper focus states
+
+## 📱 Mobile Experience
+
+- **Responsive grid layouts** that adapt to screen size
+- **Touch-optimized buttons** and interactive elements
+- **Collapsible navigation** for mobile devices
+- **Optimized search interface** for mobile typing
+- **Fast loading** with minimal data usage
+
+## 🔧 Development Guidelines
+
+### Code Quality
+- TypeScript for type safety
+- ESLint for consistent code formatting
+- Component composition for reusability
+- Proper error boundaries and loading states
+
+### Performance
+- Server Components for data fetching
+- Client Components only when necessary
+- Optimized bundle size with code splitting
+- Efficient API caching strategies
+
+### Accessibility
+- Semantic HTML structure
+- ARIA labels for screen readers
+- Keyboard navigation support
+- Sufficient color contrast ratios
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. **Connect your repository to Vercel**
+2. **Configure environment variables** (if any)
+3. **Deploy automatically** on git push
+
+### Other Platforms
+
+The app can be deployed to any platform supporting Next.js:
+- Netlify
+- AWS Amplify
+- Railway
+- DigitalOcean App Platform
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+- **Project Gutenberg** for providing free access to classic literature
+- **Gutendx API** for the excellent API service
+- **Next.js team** for the amazing framework
+- **Tailwind CSS** for the utility-first CSS framework
+- **shadcn/ui** for the beautiful UI components
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](../../issues) page
+2. Create a new issue with detailed information
+3. Include steps to reproduce any bugs
+
+---
+
+**Happy Reading! 📖** Discover the timeless classics that have shaped literature and continue to inspire readers worldwide.
