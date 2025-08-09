@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   description: "Explore over 70,000 free classic books from Project Gutenberg. Discover timeless literature, poetry, philosophy, and more.",
   keywords: ["classic books", "free books", "Project Gutenberg", "literature", "poetry", "philosophy"],
   authors: [{ name: "Classic Reads" }],
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   openGraph: {
     title: "Classic Reads - Discover Timeless Literature",
     description: "Explore over 70,000 free classic books from Project Gutenberg",
