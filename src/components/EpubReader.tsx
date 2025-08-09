@@ -4,8 +4,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { NavItem, Rendition } from 'epubjs'
 import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import React, { useCallback, useRef, useState } from 'react'
-import { IReactReaderStyle, ReactReader } from 'react-reader'
+import type { IReactReaderStyle } from 'react-reader'
+import { useSwipeable } from 'react-swipeable'
+
+const ReactReaderLazy = dynamic(() =>
+  import('react-reader').then((m) => ({ default: m.ReactReader })),
+  { ssr: false }
+)
 
 interface EpubReaderProps {
   url: string
@@ -66,6 +73,22 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
     return url
   }, [url])
+
+  // Preload EPUB asset for faster start
+  React.useEffect(() => {
+    try {
+      if (!absoluteUrl || typeof document === 'undefined') return
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.href = absoluteUrl
+      link.as = 'fetch'
+      link.crossOrigin = 'anonymous'
+      document.head.appendChild(link)
+      return () => {
+        try { document.head.removeChild(link) } catch {}
+      }
+    } catch {}
+  }, [absoluteUrl])
 
   // Debug: Log the URL being used
   console.log('EpubReader original URL:', url)
@@ -226,6 +249,18 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       rendition.themes.select(nextTheme)
     } catch (error) {
       console.error('Error setting themes:', error)
+    }
+  }, [])
+
+  // Destroy rendition on unmount to free resources (if supported)
+  React.useEffect(() => {
+    return () => {
+      try {
+        const anyRendition = renditionRef.current as unknown as { destroy?: () => void }
+        anyRendition?.destroy?.()
+      } catch (e) {
+        console.warn('Error during rendition cleanup:', e)
+      }
     }
   }, [])
 
@@ -458,12 +493,37 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     tocButtonBottom: {}
   }
 
+  // Swipe gestures (mobile): left = next page, right = previous page
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => goToNextPage(),
+    onSwipedRight: () => goToPreviousPage(),
+    preventScrollOnSwipe: true,
+    trackMouse: false,
+    delta: 40,
+  })
+
+  // Merge our container ref with swipeable's ref
+  const { ref: swipeRef, ...swipeProps } = swipeHandlers as unknown as {
+    ref?: (node: HTMLElement | null) => void
+  }
+  const setMergedRef = (node: HTMLDivElement | null) => {
+    // Assign to our ref
+    ;(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+    // Forward to swipe ref if present
+    try {
+      if (typeof swipeRef === 'function') swipeRef(node as unknown as HTMLElement | null)
+    } catch {}
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Controls Overlay */}
       {controlsVisible && (
         <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
-          <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto">
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+          >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -576,8 +636,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         </button>
       )}
 
-      {/* Navigation Controls */}
-      <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10">
+      {/* Navigation Controls (show on tap/mobile too) */}
+      <div className={`${controlsVisible ? 'block' : 'hidden'} md:block absolute top-1/2 left-4 transform -translate-y-1/2 z-40`}>
         <Button
           variant="outline"
           size="icon"
@@ -586,13 +646,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             e.stopPropagation()
             goToPreviousPage()
           }}
-          className="bg-white/90 hover:bg-white shadow-lg"
+          className="bg-background/80 hover:bg-background shadow h-10 w-10 backdrop-blur-sm"
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
       </div>
       
-      <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-10">
+      <div className={`${controlsVisible ? 'block' : 'hidden'} md:block absolute top-1/2 right-4 transform -translate-y-1/2 z-40`}>
         <Button
           variant="outline"
           size="icon"
@@ -601,11 +661,49 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             e.stopPropagation()
             goToNextPage()
           }}
-          className="bg-white/90 hover:bg-white shadow-lg"
+          className="bg-background/80 hover:bg-background shadow h-10 w-10 backdrop-blur-sm"
         >
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
+
+      {/* Mobile tap zones for page navigation */}
+      <button
+        className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10 touch-none"
+        style={{ touchAction: 'pan-y' }}
+        aria-label="Previous page"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setControlsVisible(true)
+          goToPreviousPage()
+        }}
+      />
+      <button
+        className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10 touch-none"
+        style={{ touchAction: 'pan-y' }}
+        aria-label="Next page"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setControlsVisible(true)
+          goToNextPage()
+        }}
+      />
+
+      {/* Center tap zone: reveal controls without navigation (mobile) */}
+      {!controlsVisible && (
+        <button
+          className="md:hidden absolute inset-y-0 left-1/3 right-1/3 z-10 touch-none"
+          style={{ touchAction: 'pan-y' }}
+          aria-label="Show controls"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setControlsVisible(true)
+          }}
+        />
+      )}
 
       {/* Error State */}
       {error && (
@@ -636,19 +734,26 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       {/* Reader Container */}
       {!error && (
         <div 
-          ref={containerRef}
+          ref={setMergedRef}
           className="flex-1 relative bg-white min-h-[300px]"
           data-react-reader-container
-          onPointerDown={() => {
-            if (!controlsVisible) return
-            setControlsVisible(false)
+          onPointerDown={(e) => {
+            // Avoid clicks inside the overlay area from closing it
+            const topOverlayHeight = 96 // approx overlay height including safe area
+            const clientY = (e as unknown as { clientY?: number }).clientY ?? 0
+            if (clientY <= topOverlayHeight) return
+            if (!controlsVisible) {
+              setControlsVisible(true)
+            }
           }}
           onPointerMove={() => {
             if (controlsVisible) return
             setControlsVisible(true)
           }}
+          style={{ touchAction: 'pan-y' }}
+          {...swipeProps}
         >
-          <ReactReader
+          <ReactReaderLazy
             url={absoluteUrl}
             location={location}
             locationChanged={locationChanged}
