@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(request: NextRequest) {
   const sessions_data = Array.from(global.epubSessions.entries()).map(([id, session]) => ({
     id,
