@@ -9,6 +9,13 @@ import { BookCard } from "../books/_components/BookCard"
 import { SearchBar } from "./_components/SearchBar"
 
 interface SearchPageProps {
+  searchParams: Promise<{
+    q?: string
+    page?: string
+  }>
+}
+
+interface SearchResultsProps {
   searchParams: {
     q?: string
     page?: string
@@ -29,7 +36,7 @@ function SearchSkeleton() {
   )
 }
 
-async function SearchResults({ searchParams }: SearchPageProps) {
+async function SearchResults({ searchParams }: SearchResultsProps) {
   const query = searchParams.q
   const page = parseInt(searchParams.page || "1")
 
@@ -80,8 +87,9 @@ async function SearchResults({ searchParams }: SearchPageProps) {
   }
 }
 
-export default function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams.q
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const resolved = await searchParams
+  const query = resolved.q
   const suggestedTerms = getSuggestedSearchTerms()
 
   // If there's a query but we're not on the books page, redirect to books with search
@@ -112,7 +120,7 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
       {/* Search Results */}
       {query && (
         <Suspense fallback={<SearchSkeleton />}>
-          <SearchResults searchParams={searchParams} />
+          <SearchResults searchParams={resolved} />
         </Suspense>
       )}
 
