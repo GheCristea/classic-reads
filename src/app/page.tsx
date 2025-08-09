@@ -99,7 +99,7 @@ export default async function Home() {
               <span className="text-primary block">Classic Literature</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Explore over 70,000 free books from Project Gutenberg's vast collection. 
+              Explore over 70,000 free books from Project Gutenberg&apos;s vast collection. 
               From Shakespeare to Dickens, find your next great read.
             </p>
           </div>
@@ -135,7 +135,7 @@ export default async function Home() {
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Why Choose Classic Reads?</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Your gateway to the world's greatest literature, completely free and accessible.
+              Your gateway to the world&apos;s greatest literature, completely free and accessible.
             </p>
           </div>
           

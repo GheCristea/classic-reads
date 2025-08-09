@@ -15,7 +15,7 @@ export default function NotFound() {
           <div className="space-y-2">
             <h1 className="text-4xl font-bold">Page Not Found</h1>
             <p className="text-xl text-muted-foreground">
-              The page you're looking for doesn't exist in our library.
+              The page you&apos;re looking for doesn&apos;t exist in our library.
             </p>
           </div>
         </div>
