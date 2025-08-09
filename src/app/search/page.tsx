@@ -46,7 +46,7 @@ async function SearchResults({ searchParams }: SearchPageProps) {
           <div>
             <h2 className="text-2xl font-bold">Search Results</h2>
             <p className="text-muted-foreground">
-              Found {booksResponse.count.toLocaleString()} books for "{query}"
+              Found {booksResponse.count.toLocaleString()} books for &quot;{query}&quot;
             </p>
           </div>
         </div>
@@ -163,17 +163,17 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
                 <div className="space-y-3">
                   <h4 className="font-semibold">Author Searches</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Use last name first: "Dickens, Charles"</li>
-                    <li>• Or just the last name: "Dickens"</li>
+                    <li>• Use last name first: &quot;Dickens, Charles&quot;</li>
+                    <li>• Or just the last name: &quot;Dickens&quot;</li>
                     <li>• Try common name variations</li>
                   </ul>
                 </div>
                 <div className="space-y-3">
                   <h4 className="font-semibold">Subject Searches</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Use broad categories: "Fiction", "Poetry"</li>
-                    <li>• Try specific topics: "Adventure", "Romance"</li>
-                    <li>• Search by time period: "Victorian", "Medieval"</li>
+                    <li>• Use broad categories: &quot;Fiction&quot;, &quot;Poetry&quot;</li>
+                    <li>• Try specific topics: &quot;Adventure&quot;, &quot;Romance&quot;</li>
+                    <li>• Search by time period: &quot;Victorian&quot;, &quot;Medieval&quot;</li>
                   </ul>
                 </div>
               </div>
