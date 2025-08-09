@@ -890,6 +890,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         setSelectionMode={setSelectionMode}
         onPrev={goToPreviousPage}
         onNext={goToNextPage}
+        onClose={onClose}
         isNavigating={isNavigating}
         fontSizePct={fontSizePct}
         setFontSizePct={(next) => {
@@ -963,6 +964,7 @@ type MobileControlsProps = {
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>
   onPrev: () => void
   onNext: () => void
+  onClose: () => void
   isNavigating: boolean
   fontSizePct: number
   setFontSizePct: (value: number) => void
@@ -976,6 +978,7 @@ function MobileControls(props: MobileControlsProps) {
     setSelectionMode,
     onPrev,
     onNext,
+    onClose,
     isNavigating,
     fontSizePct,
     setFontSizePct,
@@ -1047,7 +1050,10 @@ function MobileControls(props: MobileControlsProps) {
                 {selectionMode ? 'On' : 'Off'}
               </Button>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              <Button className="w-full h-11" variant="destructive" onClick={onClose}>
+                Close Reader
+              </Button>
               <Button className="w-full h-11" variant="outline" onClick={() => setIsMenuOpen(false)}>
                 Close Menu
               </Button>
