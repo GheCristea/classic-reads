@@ -516,7 +516,12 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div 
+      className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
+      onTouchMove={(e) => e.preventDefault()}
+      onWheel={(e) => e.preventDefault()}
+      style={{ touchAction: 'none' }}
+    >
       {/* Controls Overlay */}
       {controlsVisible && (
         <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
@@ -669,9 +674,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
       {/* Mobile tap zones for page navigation */}
       <button
-        className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10 touch-none"
-        style={{ touchAction: 'pan-y' }}
+        className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10"
+        style={{ touchAction: 'manipulation' }}
         aria-label="Previous page"
+        onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -680,9 +686,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         }}
       />
       <button
-        className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10 touch-none"
-        style={{ touchAction: 'pan-y' }}
+        className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10"
+        style={{ touchAction: 'manipulation' }}
         aria-label="Next page"
+        onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -694,9 +701,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       {/* Center tap zone: reveal controls without navigation (mobile) */}
       {!controlsVisible && (
         <button
-          className="md:hidden absolute inset-y-0 left-1/3 right-1/3 z-10 touch-none"
-          style={{ touchAction: 'pan-y' }}
+          className="md:hidden absolute inset-y-0 left-1/3 right-1/3 z-10"
+          style={{ touchAction: 'manipulation' }}
           aria-label="Show controls"
+          onTouchStart={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -735,7 +743,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       {!error && (
         <div 
           ref={setMergedRef}
-          className="flex-1 relative bg-white min-h-[300px]"
+          className="flex-1 relative bg-white min-h-[300px] overflow-hidden"
           data-react-reader-container
           onPointerDown={(e) => {
             // Avoid clicks inside the overlay area from closing it
@@ -750,7 +758,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             if (controlsVisible) return
             setControlsVisible(true)
           }}
-          style={{ touchAction: 'pan-y' }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          style={{ touchAction: 'manipulation' }}
           {...swipeProps}
         >
           <ReactReaderLazy
