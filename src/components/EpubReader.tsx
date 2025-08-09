@@ -30,6 +30,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [controlsVisible, setControlsVisible] = useState(false)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [, setNavigationQueue] = useState<Array<'next' | 'prev'>>([])
   const renditionRef = useRef<Rendition>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const autoHideTimerRef = useRef<number | null>(null)
@@ -205,6 +208,21 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     
     rendition.on('relocated', (location: string) => {
       console.log('📍 Book relocated to:', location)
+      // Release navigation lock and process queued actions
+      setIsNavigating(false)
+      setNavigationQueue((queue) => {
+        if (queue.length === 0) return queue
+        const [nextDirection, ...remaining] = queue
+        // Defer to allow DOM to settle
+        setTimeout(() => {
+          if (nextDirection === 'next') {
+            renditionRef.current?.next?.()
+          } else {
+            renditionRef.current?.prev?.()
+          }
+        }, 100)
+        return remaining
+      })
     })
     
     // Force resize to ensure proper display
@@ -274,32 +292,34 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
   }, [])
 
-  // Navigation functions with debugging
-  const goToNextPage = useCallback(() => {
-    console.log('Next button clicked, rendition:', renditionRef.current)
-    if (renditionRef.current && renditionRef.current.next) {
-      try {
-        renditionRef.current.next()
-      } catch (error) {
-        console.error('Error going to next page:', error)
-      }
-    } else {
-      console.warn('No rendition available for next page')
+  // Navigation controller: throttle/queue rapid taps
+  const navigate = useCallback((direction: 'next' | 'prev') => {
+    const rendition = renditionRef.current
+    if (!rendition) {
+      console.warn('No rendition available for navigation')
+      return
     }
-  }, [])
 
-  const goToPreviousPage = useCallback(() => {
-    console.log('Previous button clicked, rendition:', renditionRef.current)
-    if (renditionRef.current && renditionRef.current.prev) {
-      try {
-        renditionRef.current.prev()
-      } catch (error) {
-        console.error('Error going to previous page:', error)
-      }
-    } else {
-      console.warn('No rendition available for previous page')
+    if (isNavigating) {
+      setNavigationQueue((q) => [...q, direction])
+      return
     }
-  }, [])
+
+    setIsNavigating(true)
+    try {
+      if (direction === 'next') {
+        rendition.next?.()
+      } else {
+        rendition.prev?.()
+      }
+    } catch (error) {
+      console.error('Navigation error:', error)
+      setIsNavigating(false)
+    }
+  }, [isNavigating])
+
+  const goToNextPage = useCallback(() => navigate('next'), [navigate])
+  const goToPreviousPage = useCallback(() => navigate('prev'), [navigate])
 
   const goToChapter = useCallback((href: string) => {
     console.log('Chapter clicked:', href, 'rendition:', renditionRef.current)
@@ -505,11 +525,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
   // Swipe gestures (mobile): left = next page, right = previous page
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => goToNextPage(),
-    onSwipedRight: () => goToPreviousPage(),
+    onSwipedLeft: () => (!selectionMode ? goToNextPage() : undefined),
+    onSwipedRight: () => (!selectionMode ? goToPreviousPage() : undefined),
     preventScrollOnSwipe: true,
     trackMouse: false,
-    delta: 40,
+    delta: 50,
   })
 
   // Merge our container ref with swipeable's ref
@@ -528,19 +548,17 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   return (
     <div 
       className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
-      onTouchMove={(e) => e.preventDefault()}
-      onWheel={(e) => e.preventDefault()}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'pan-y' }}
     >
       {/* Controls Overlay */}
       {controlsVisible && (
-        <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
+        <div className="hidden md:block absolute top-0 left-0 right-0 z-30 pointer-events-none">
           <div
             className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto"
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
           >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
@@ -555,6 +573,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             <Button
               variant="outline"
               size="sm"
+              className="min-h-11 min-w-11"
               onClick={() => {
                 const next = Math.max(80, fontSizePct - 10)
                 setFontSizePct(next)
@@ -576,6 +595,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             <Button
               variant="outline"
               size="sm"
+              className="min-h-11 min-w-11"
               onClick={() => {
                 const next = Math.min(200, fontSizePct + 10)
                 setFontSizePct(next)
@@ -632,6 +652,15 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             <Menu className="h-4 w-4" />
             <span className="hidden sm:inline ml-2">Contents ({toc.length})</span>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`ml-2 ${selectionMode ? 'bg-muted' : ''}`}
+            onClick={() => setSelectionMode((v) => !v)}
+            title="Toggle selection mode"
+          >
+            {selectionMode ? 'Selection: On' : 'Selection: Off'}
+          </Button>
         </div>
           </div>
         </div>
@@ -640,7 +669,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       {/* Reveal Indicator */}
       {!controlsVisible && (
         <button
-          className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-background/60 hover:bg-background/80 text-foreground text-[11px] px-2 py-0.5 rounded-full shadow backdrop-blur-sm pointer-events-auto"
+          className="hidden md:block absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-background/60 hover:bg-background/80 text-foreground text-[11px] px-2 py-0.5 rounded-full shadow backdrop-blur-sm pointer-events-auto"
           onClick={(e) => {
             e.stopPropagation()
             setControlsVisible(true)
@@ -661,7 +690,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             e.stopPropagation()
             goToPreviousPage()
           }}
-          className="bg-background/80 hover:bg-background shadow h-10 w-10 backdrop-blur-sm"
+          className="bg-background/80 hover:bg-background shadow h-11 w-11 backdrop-blur-sm"
+          disabled={isNavigating}
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -676,7 +706,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             e.stopPropagation()
             goToNextPage()
           }}
-          className="bg-background/80 hover:bg-background shadow h-10 w-10 backdrop-blur-sm"
+          className="bg-background/80 hover:bg-background shadow h-11 w-11 backdrop-blur-sm"
+          disabled={isNavigating}
         >
           <ChevronRight className="h-5 w-5" />
         </Button>
@@ -686,24 +717,26 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       <button
         className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10"
         style={{ touchAction: 'manipulation' }}
-        aria-label="Toggle controls"
+        aria-label="Previous page"
         onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          toggleControls()
+          if (!selectionMode) goToPreviousPage()
         }}
+        disabled={isNavigating}
       />
       <button
         className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10"
         style={{ touchAction: 'manipulation' }}
-        aria-label="Toggle controls"
+        aria-label="Next page"
         onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          toggleControls()
+          if (!selectionMode) goToNextPage()
         }}
+        disabled={isNavigating}
       />
 
       {/* Center tap zone: reveal controls without navigation (mobile) */}
@@ -769,7 +802,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           onTouchStart={(e) => e.stopPropagation()}
           onTouchMove={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
-          style={{ touchAction: 'manipulation' }}
+          style={{ touchAction: 'pan-y' }}
           {...swipeProps}
         >
           <ReactReaderLazy
@@ -827,10 +860,46 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               <div>Error: {error ? 'Yes' : 'No'}</div>
               <div>TOC items: {toc.length}</div>
               <div>Location: {typeof location === 'string' ? location.substring(0, 20) + '...' : location}</div>
+              <div>Navigating: {isNavigating ? 'Yes' : 'No'}</div>
+              <div>Selection: {selectionMode ? 'On' : 'Off'}</div>
             </div>
           )}
         </div>
       )}
+
+      {/* Mobile floating action button and bottom sheet */}
+      <MobileControls
+        selectionMode={selectionMode}
+        setSelectionMode={setSelectionMode}
+        onPrev={goToPreviousPage}
+        onNext={goToNextPage}
+        isNavigating={isNavigating}
+        fontSizePct={fontSizePct}
+        setFontSizePct={(next) => {
+          const clamped = Math.max(80, Math.min(200, next))
+          setFontSizePct(clamped)
+          try {
+            renditionRef.current?.themes.fontSize(`${clamped}%`)
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('reader-font-size', String(clamped))
+            }
+          } catch (e) {
+            console.error('Error updating font size:', e)
+          }
+        }}
+        themeName={themeName}
+        setThemeName={(next) => {
+          setThemeName(next)
+          try {
+            renditionRef.current?.themes.select(next)
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('reader-theme', next)
+            }
+          } catch (e) {
+            console.error('Error updating theme:', e)
+          }
+        }}
+      />
 
       {/* Table of Contents Overlay */}
       {showToc && toc.length > 0 && (
@@ -871,3 +940,104 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     </div>
   )
 } 
+
+type MobileControlsProps = {
+  selectionMode: boolean
+  setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>
+  onPrev: () => void
+  onNext: () => void
+  isNavigating: boolean
+  fontSizePct: number
+  setFontSizePct: (value: number) => void
+  themeName: 'light' | 'sepia'
+  setThemeName: (value: 'light' | 'sepia') => void
+}
+
+function MobileControls(props: MobileControlsProps) {
+  const {
+    selectionMode,
+    setSelectionMode,
+    onPrev,
+    onNext,
+    isNavigating,
+    fontSizePct,
+    setFontSizePct,
+    themeName,
+    setThemeName,
+  } = props
+
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
+
+  return (
+    <>
+      {/* FAB */}
+      <button
+        className="md:hidden fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg focus:outline-none"
+        aria-label="Reader menu"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsMenuOpen((v) => !v)
+        }}
+        style={{ minWidth: 44, minHeight: 44 }}
+      >
+        ☰
+      </button>
+
+      {/* Bottom sheet */}
+      {isMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40"
+          onClick={() => setIsMenuOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="absolute left-0 right-0 bottom-0 bg-background rounded-t-xl shadow-xl p-4 space-y-3"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto h-1 w-10 bg-muted rounded" />
+            <div className="flex items-center justify-between">
+              <Button variant="outline" className="h-11" onClick={onPrev} disabled={isNavigating}>
+                <ChevronLeft className="h-5 w-5 mr-2" /> Previous
+              </Button>
+              <Button variant="outline" className="h-11" onClick={onNext} disabled={isNavigating}>
+                Next <ChevronRight className="h-5 w-5 ml-2" />
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Font size</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="h-11 w-11" onClick={() => setFontSizePct(fontSizePct - 10)}>A-</Button>
+                <span className="text-xs w-10 text-center">{fontSizePct}%</span>
+                <Button variant="outline" className="h-11 w-11" onClick={() => setFontSizePct(fontSizePct + 10)}>A+</Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <select
+                className="border rounded px-2 py-2 text-sm"
+                value={themeName}
+                onChange={(e) => setThemeName(e.target.value as 'light' | 'sepia')}
+              >
+                <option value="light">Light</option>
+                <option value="sepia">Sepia</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Selection mode</span>
+              <Button variant="outline" className="h-11" onClick={() => setSelectionMode(!selectionMode)}>
+                {selectionMode ? 'On' : 'Off'}
+              </Button>
+            </div>
+            <div className="pt-2">
+              <Button className="w-full h-11" variant="outline" onClick={() => setIsMenuOpen(false)}>
+                Close Menu
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
