@@ -71,7 +71,7 @@ export function Header() {
         <div className="md:hidden fixed inset-0 top-16 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t overflow-x-hidden">
           <div className="container mx-auto px-4 py-4 h-full overflow-y-auto">
             <div className="mb-4">
-              <SearchField size="md" showButton={true} />
+              <SearchField size="md" showButton={true} onSearchSubmit={closeMenu} />
             </div>
 
             <nav className="flex flex-col space-y-2">

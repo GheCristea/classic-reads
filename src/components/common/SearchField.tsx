@@ -16,6 +16,7 @@ interface SearchFieldProps {
   defaultQuery?: string
   autoFocus?: boolean
   buildHref?: (query: string) => string
+  onSearchSubmit?: () => void
 }
 
 export function SearchField({
@@ -27,6 +28,7 @@ export function SearchField({
   defaultQuery = '',
   autoFocus = false,
   buildHref,
+  onSearchSubmit,
 }: SearchFieldProps) {
   const [query, setQuery] = React.useState(defaultQuery)
   const router = useRouter()
@@ -37,6 +39,7 @@ export function SearchField({
     if (!trimmed) return
     const href = buildHref ? buildHref(trimmed) : `/books?search=${encodeURIComponent(trimmed)}`
     router.push(href)
+    onSearchSubmit?.()
   }
 
   const heightClass = size === 'lg' ? 'h-12 text-lg' : size === 'sm' ? 'h-9 text-sm' : 'h-10'
