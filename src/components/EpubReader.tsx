@@ -280,6 +280,17 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
   }, [])
 
+  // Lock body scroll while reader is open
+  React.useEffect(() => {
+    try {
+      const prevOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        try { document.body.style.overflow = prevOverflow } catch {}
+      }
+    } catch {}
+  }, [])
+
   // Destroy rendition on unmount to free resources (if supported)
   React.useEffect(() => {
     return () => {
@@ -548,7 +559,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   return (
     <div 
       className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
-      style={{ touchAction: 'pan-y' }}
+      style={{ 
+        touchAction: 'pan-y', 
+        height: '100dvh',
+        overscrollBehavior: 'contain'
+      }}
+      onTouchMove={(e) => { e.preventDefault(); e.stopPropagation() }}
+      onWheel={(e) => { e.preventDefault(); e.stopPropagation() }}
     >
       {/* Controls Overlay */}
       {controlsVisible && (
