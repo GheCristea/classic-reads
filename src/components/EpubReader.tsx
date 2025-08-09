@@ -36,6 +36,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const renditionRef = useRef<Rendition>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const autoHideTimerRef = useRef<number | null>(null)
+  const prevOverflowRef = useRef<string>('')
+  const prevHtmlOverflowRef = useRef<string>('')
   const AUTO_HIDE_DELAY_MS = 2500
 
   // Reader appearance settings
@@ -280,16 +282,41 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
   }, [])
 
-  // Lock body scroll while reader is open
+  // Lock body scroll while reader is open (iOS-safe: lock both body and html)
   React.useEffect(() => {
     try {
       const prevOverflow = document.body.style.overflow
+      const prevHtmlOverflow = document.documentElement.style.overflow
+      prevOverflowRef.current = prevOverflow
+      prevHtmlOverflowRef.current = prevHtmlOverflow
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
       return () => {
-        try { document.body.style.overflow = prevOverflow } catch {}
+        try {
+          document.body.style.overflow = prevOverflowRef.current
+          document.documentElement.style.overflow = prevHtmlOverflowRef.current
+        } catch {}
       }
     } catch {}
   }, [])
+
+  const handleClose = useCallback(() => {
+    // Proactively restore scroll before parent unmounts this component
+    try {
+      document.body.style.overflow = prevOverflowRef.current || ''
+      document.documentElement.style.overflow = prevHtmlOverflowRef.current || ''
+      // Failsafe: if still stuck, force enable after a tick
+      setTimeout(() => {
+        if (getComputedStyle(document.body).overflow === 'hidden') {
+          document.body.style.overflow = 'auto'
+        }
+        if (getComputedStyle(document.documentElement).overflow === 'hidden') {
+          document.documentElement.style.overflow = 'auto'
+        }
+      }, 0)
+    } catch {}
+    onClose()
+  }, [onClose])
 
   // Destroy rendition on unmount to free resources (if supported)
   React.useEffect(() => {
@@ -575,7 +602,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
           >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={handleClose}>
             <X className="h-5 w-5" />
           </Button>
           <div className="min-w-0">
@@ -890,7 +917,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         setSelectionMode={setSelectionMode}
         onPrev={goToPreviousPage}
         onNext={goToNextPage}
-        onClose={onClose}
+        onClose={handleClose}
         isNavigating={isNavigating}
         fontSizePct={fontSizePct}
         setFontSizePct={(next) => {
