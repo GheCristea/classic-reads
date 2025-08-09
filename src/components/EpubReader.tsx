@@ -132,6 +132,16 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }, AUTO_HIDE_DELAY_MS)
   }, [AUTO_HIDE_DELAY_MS, clearAutoHideTimer, controlsVisible, showToc])
 
+  const toggleControls = useCallback(() => {
+    setControlsVisible((prev) => {
+      const next = !prev
+      if (!next) {
+        clearAutoHideTimer()
+      }
+      return next
+    })
+  }, [clearAutoHideTimer])
+
   React.useEffect(() => {
     if (controlsVisible && !showToc) {
       scheduleAutoHide()
@@ -676,25 +686,23 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       <button
         className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10"
         style={{ touchAction: 'manipulation' }}
-        aria-label="Previous page"
+        aria-label="Toggle controls"
         onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          setControlsVisible(true)
-          goToPreviousPage()
+          toggleControls()
         }}
       />
       <button
         className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10"
         style={{ touchAction: 'manipulation' }}
-        aria-label="Next page"
+        aria-label="Toggle controls"
         onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          setControlsVisible(true)
-          goToNextPage()
+          toggleControls()
         }}
       />
 
@@ -703,12 +711,12 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         <button
           className="md:hidden absolute inset-y-0 left-1/3 right-1/3 z-10"
           style={{ touchAction: 'manipulation' }}
-          aria-label="Show controls"
+          aria-label="Toggle controls"
           onTouchStart={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            setControlsVisible(true)
+            toggleControls()
           }}
         />
       )}
