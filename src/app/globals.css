@@ -59,6 +59,18 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Prevent accidental horizontal scrolling on mobile */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Media elements should not overflow their containers */
+img, svg, video, canvas, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Line clamp utilities */
 .line-clamp-1 {
   overflow: hidden;
