@@ -92,7 +92,7 @@ export default async function Home() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-muted/50 to-background py-20 px-4">
-        <div className="container mx-auto text-center space-y-8">
+        <div className="container mx-auto max-w-full text-center space-y-8">
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               Discover Timeless
@@ -131,7 +131,7 @@ export default async function Home() {
 
       {/* Features Section */}
       <section className="py-16 px-4 bg-background">
-        <div className="container mx-auto">
+        <div className="container mx-auto max-w-full">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Why Choose Classic Reads?</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -139,7 +139,7 @@ export default async function Home() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 w-full">
             <Card className="text-center">
               <CardHeader>
                 <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -181,7 +181,7 @@ export default async function Home() {
 
       {/* Popular Books Section */}
       <section className="py-16 px-4 bg-muted/30">
-        <div className="container mx-auto">
+        <div className="container mx-auto max-w-full">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-bold mb-2">
@@ -201,7 +201,7 @@ export default async function Home() {
             </Button>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
             {popularBooks.map((book) => (
               <BookCard key={book.id} book={book} />
             ))}
@@ -211,7 +211,7 @@ export default async function Home() {
 
       {/* Browse by Genre Section */}
       <section className="py-16 px-4 bg-background">
-        <div className="container mx-auto">
+        <div className="container mx-auto max-w-full">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Browse by Interest</h2>
             <p className="text-muted-foreground">
@@ -219,7 +219,7 @@ export default async function Home() {
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
             {searchTerms.map((term) => (
               <Card key={term} className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardContent className="p-6 text-center">
@@ -239,7 +239,7 @@ export default async function Home() {
 
       {/* CTA Section */}
       <section className="py-16 px-4 bg-primary/5">
-        <div className="container mx-auto text-center space-y-6">
+        <div className="container mx-auto max-w-full text-center space-y-6">
           <h2 className="text-3xl font-bold">Start Your Literary Journey</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Join thousands of readers who have discovered the joy of classic literature. 
