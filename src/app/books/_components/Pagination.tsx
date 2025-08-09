@@ -64,7 +64,7 @@ export function Pagination({ currentPage, totalPages, hasNext, hasPrevious }: Pa
   const visiblePages = getVisiblePages()
 
   return (
-    <div className="flex items-center justify-center space-x-2">
+    <div className="flex items-center justify-center space-x-2 w-full">
       {/* Previous button */}
       <Button
         variant="outline"
