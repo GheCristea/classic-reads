@@ -22,8 +22,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const [showToc, setShowToc] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [controlsVisible, setControlsVisible] = useState(false)
   const renditionRef = useRef<Rendition>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const autoHideTimerRef = useRef<number | null>(null)
+  const AUTO_HIDE_DELAY_MS = 2500
 
   // Reader appearance settings
   const [fontSizePct, setFontSizePct] = useState<number>(100)
@@ -89,6 +92,46 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     console.log('TOC received:', toc)
     setToc(toc)
   }, [])
+
+  // Auto-hide controls after inactivity when visible
+  const clearAutoHideTimer = useCallback(() => {
+    if (autoHideTimerRef.current !== null) {
+      window.clearTimeout(autoHideTimerRef.current)
+      autoHideTimerRef.current = null
+    }
+  }, [])
+
+  const scheduleAutoHide = useCallback(() => {
+    clearAutoHideTimer()
+    if (!controlsVisible || showToc) return
+    autoHideTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false)
+    }, AUTO_HIDE_DELAY_MS)
+  }, [AUTO_HIDE_DELAY_MS, clearAutoHideTimer, controlsVisible, showToc])
+
+  React.useEffect(() => {
+    if (controlsVisible && !showToc) {
+      scheduleAutoHide()
+    } else {
+      clearAutoHideTimer()
+    }
+    return clearAutoHideTimer
+  }, [controlsVisible, showToc, scheduleAutoHide, clearAutoHideTimer])
+
+  React.useEffect(() => {
+    const handleUserActivity = () => {
+      if (!controlsVisible || showToc) return
+      scheduleAutoHide()
+    }
+    window.addEventListener('mousemove', handleUserActivity)
+    window.addEventListener('touchstart', handleUserActivity)
+    window.addEventListener('keydown', handleUserActivity)
+    return () => {
+      window.removeEventListener('mousemove', handleUserActivity)
+      window.removeEventListener('touchstart', handleUserActivity)
+      window.removeEventListener('keydown', handleUserActivity)
+    }
+  }, [controlsVisible, showToc, scheduleAutoHide])
 
   const getRendition = useCallback((rendition: Rendition) => {
     console.log('Rendition received:', rendition)
@@ -417,8 +460,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 border-b">
+      {/* Controls Overlay */}
+      {controlsVisible && (
+        <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -513,7 +558,23 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             <span className="hidden sm:inline ml-2">Contents ({toc.length})</span>
           </Button>
         </div>
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reveal Indicator */}
+      {!controlsVisible && (
+        <button
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-background/60 hover:bg-background/80 text-foreground text-[11px] px-2 py-0.5 rounded-full shadow backdrop-blur-sm pointer-events-auto"
+          onClick={(e) => {
+            e.stopPropagation()
+            setControlsVisible(true)
+          }}
+          aria-label="Show reader controls"
+        >
+          Show controls
+        </button>
+      )}
 
       {/* Navigation Controls */}
       <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-10">
@@ -578,6 +639,14 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           ref={containerRef}
           className="flex-1 relative bg-white min-h-[300px]"
           data-react-reader-container
+          onPointerDown={() => {
+            if (!controlsVisible) return
+            setControlsVisible(false)
+          }}
+          onPointerMove={() => {
+            if (controlsVisible) return
+            setControlsVisible(true)
+          }}
         >
           <ReactReader
             url={absoluteUrl}
