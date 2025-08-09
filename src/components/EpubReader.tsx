@@ -416,22 +416,22 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 border-b">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="font-semibold text-lg line-clamp-1">{title}</h1>
-            <p className="text-sm text-muted-foreground">{author}</p>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-base sm:text-lg truncate">{title}</h1>
+            <p className="hidden sm:block text-sm text-muted-foreground">{author}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
           {/* Font size controls */}
-          <div className="flex items-center gap-1 mr-2">
+          <div className="flex items-center gap-1 mr-1 sm:mr-2">
             <Button
               variant="outline"
               size="sm"
@@ -452,7 +452,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             >
               A-
             </Button>
-            <span className="text-xs w-10 text-center text-muted-foreground">{fontSizePct}%</span>
+            <span className="hidden sm:inline-block text-xs w-10 text-center text-muted-foreground">{fontSizePct}%</span>
             <Button
               variant="outline"
               size="sm"
@@ -476,7 +476,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           </div>
 
           {/* Theme selector */}
-          <div className="flex items-center gap-1 mr-2">
+          <div className="hidden sm:flex items-center gap-1 mr-2">
             <label className="text-xs text-muted-foreground">Theme</label>
             <select
               className="border rounded px-2 py-1 text-sm"
@@ -509,8 +509,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             }}
             disabled={toc.length === 0}
           >
-            <Menu className="h-4 w-4 mr-2" />
-            Contents ({toc.length})
+            <Menu className="h-4 w-4" />
+            <span className="hidden sm:inline ml-2">Contents ({toc.length})</span>
           </Button>
         </div>
       </div>
@@ -576,13 +576,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       {!error && (
         <div 
           ref={containerRef}
-          className="flex-1 relative bg-white"
+          className="flex-1 relative bg-white min-h-[300px]"
           data-react-reader-container
-          style={{ 
-            height: 'calc(100vh - 73px)',
-            minHeight: '500px',
-            width: '100%'
-          }}
         >
           <ReactReader
             url={absoluteUrl}
