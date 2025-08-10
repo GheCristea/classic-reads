@@ -1,12 +1,20 @@
 "use client"
 
+import MobileControls from '@/components/epub-reader/MobileControls'
+import { baseReaderStyles } from '@/components/epub-reader/styles'
+import type {
+  EpubContentsLike,
+  EpubLocation,
+  EpubLocationsApi,
+  ExtendedStyle,
+  RenditionWithBook
+} from '@/components/epub-reader/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { NavItem, Rendition } from 'epubjs'
+import type { NavItem } from 'epubjs'
 import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useRef, useState } from 'react'
-import type { IReactReaderStyle } from 'react-reader'
 import { useSwipeable } from 'react-swipeable'
 
 const ReactReaderLazy = dynamic(() =>
@@ -33,11 +41,18 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const [selectionMode, setSelectionMode] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [, setNavigationQueue] = useState<Array<'next' | 'prev'>>([])
-  const renditionRef = useRef<Rendition>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [transitionDirection, setTransitionDirection] = useState<null | 'next' | 'prev'>(null)
+  const [isTextSelected, setIsTextSelected] = useState(false)
+  const [progress, setProgress] = useState<{ chapter: number; book: number; timeLeft: number }>({ chapter: 0, book: 0, timeLeft: 0 })
+  const [totalLocations, setTotalLocations] = useState<number>(0)
+  const renditionRef = useRef<RenditionWithBook>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const autoHideTimerRef = useRef<number | null>(null)
   const prevOverflowRef = useRef<string>('')
   const prevHtmlOverflowRef = useRef<string>('')
+  const lastNavTimeRef = useRef<number>(0)
+  const selectionModeRef = useRef<boolean>(selectionMode)
   const AUTO_HIDE_DELAY_MS = 2500
 
   // Reader appearance settings
@@ -78,22 +93,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
     return url
   }, [url])
-
-  // Preload EPUB asset for faster start
-  React.useEffect(() => {
-    try {
-      if (!absoluteUrl || typeof document === 'undefined') return
-      const link = document.createElement('link')
-      link.rel = 'preload'
-      link.href = absoluteUrl
-      link.as = 'fetch'
-      link.crossOrigin = 'anonymous'
-      document.head.appendChild(link)
-      return () => {
-        try { document.head.removeChild(link) } catch {}
-      }
-    } catch {}
-  }, [absoluteUrl])
 
   // Debug: Log the URL being used
   console.log('EpubReader original URL:', url)
@@ -171,7 +170,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     }
   }, [controlsVisible, showToc, scheduleAutoHide])
 
-  const getRendition = useCallback((rendition: Rendition) => {
+  const getRendition = useCallback((rendition: RenditionWithBook) => {
     console.log('Rendition received:', rendition)
     
     if (!rendition) {
@@ -201,6 +200,38 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       } else {
         console.warn('⚠️ EPUB iframe not found in DOM')
       }
+
+      // Attach selection monitoring and enforce touch/selection styles inside iframe(s)
+      try {
+        const unsafeContents = (rendition as unknown as { getContents?: () => unknown }).getContents?.()
+        const contentsList: EpubContentsLike[] = Array.isArray(unsafeContents)
+          ? (unsafeContents as EpubContentsLike[])
+          : unsafeContents
+            ? [unsafeContents as EpubContentsLike]
+            : []
+        contentsList.forEach((contents: EpubContentsLike) => {
+          const doc: Document | undefined = contents?.document
+          if (!doc) return
+          // Ensure consistent touch behavior
+          const body = doc.body
+          if (body) {
+            body.style.touchAction = 'pan-y'
+            body.style.userSelect = selectionModeRef.current ? 'text' : 'none'
+            ;(body.style as ExtendedStyle).webkitUserSelect = selectionModeRef.current ? 'text' : 'none'
+          }
+          // Monitor text selection to temporarily disable navigation when selecting
+          const onSelectionChange = () => {
+            try {
+              const sel = doc.getSelection?.()
+              setIsTextSelected(Boolean(sel && sel.toString().length > 0))
+            } catch {}
+          }
+          doc.removeEventListener('selectionchange', onSelectionChange)
+          doc.addEventListener('selectionchange', onSelectionChange)
+        })
+      } catch (e) {
+        console.warn('Unable to attach selection listeners to EPUB contents:', e)
+      }
     })
     
     rendition.on('loadError', (error: unknown) => {
@@ -208,10 +239,31 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       setError('Failed to load book content. Please try again.')
     })
     
-    rendition.on('relocated', (location: string) => {
+    rendition.on('relocated', (location: EpubLocation) => {
       console.log('📍 Book relocated to:', location)
       // Release navigation lock and process queued actions
       setIsNavigating(false)
+      setIsTransitioning(false)
+      setTransitionDirection(null)
+
+      // Update reading progress (chapter/book/time remaining)
+      try {
+        const bookProgress = location?.start?.percentage ?? 0
+        const displayed = location?.start?.displayed
+        const chapterProgress = displayed ? (displayed.page || 0) / Math.max(1, displayed.total || 1) : 0
+        const locationsTotal = renditionRef.current?.book?.locations?.total || 0
+        const wordsPerLocation = 150
+        const wordsRemaining = Math.max(0, locationsTotal * (1 - bookProgress) * wordsPerLocation)
+        const minutesLeft = Math.ceil(wordsRemaining / 250)
+        setProgress({
+          chapter: Math.round(chapterProgress * 100),
+          book: Math.round(bookProgress * 100),
+          timeLeft: minutesLeft,
+        })
+      } catch (e) {
+        console.warn('Failed to compute reading progress:', e)
+      }
+
       setNavigationQueue((queue) => {
         if (queue.length === 0) return queue
         const [nextDirection, ...remaining] = queue
@@ -280,6 +332,33 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     } catch (error) {
       console.error('Error setting themes:', error)
     }
+
+    // Prepare EPUB locations for consistent pagination and progress calculation
+    try {
+      const anyRendition = rendition as unknown as RenditionWithBook
+      const book = anyRendition?.book
+      const initLocations = async () => {
+        try {
+          if (!book) return
+          // Ensure book is ready, then generate locations
+          await (book.ready || Promise.resolve())
+          if (!book.locations || !book.locations.generate) return
+          await (book.locations as EpubLocationsApi).generate?.(1600) // ~600 chars per page
+          const total = book.locations.total || 0
+          setTotalLocations(total)
+          // If we already have a current location, trigger a progress computation
+          const loc = (rendition as unknown as RenditionWithBook).currentLocation?.()
+          if (loc) {
+            ;(rendition as unknown as RenditionWithBook).emit?.('relocated', loc)
+          }
+        } catch (e) {
+          console.warn('Failed to generate EPUB locations:', e)
+        }
+      }
+      initLocations()
+    } catch (e) {
+      console.warn('Error during locations initialization:', e)
+    }
   }, [])
 
   // Lock body scroll while reader is open (iOS-safe: lock both body and html)
@@ -338,12 +417,26 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       return
     }
 
+    // Avoid navigation when user is selecting text
+    if (isTextSelected) {
+      return
+    }
+
+    // Throttle to avoid overwhelming mobile devices
+    const now = Date.now()
+    if (now - lastNavTimeRef.current < 250) {
+      return
+    }
+    lastNavTimeRef.current = now
+
     if (isNavigating) {
       setNavigationQueue((q) => [...q, direction])
       return
     }
 
     setIsNavigating(true)
+    setIsTransitioning(true)
+    setTransitionDirection(direction)
     try {
       if (direction === 'next') {
         rendition.next?.()
@@ -353,8 +446,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     } catch (error) {
       console.error('Navigation error:', error)
       setIsNavigating(false)
+      setIsTransitioning(false)
+      setTransitionDirection(null)
     }
-  }, [isNavigating])
+  }, [isNavigating, isTextSelected])
 
   const goToNextPage = useCallback(() => navigate('next'), [navigate])
   const goToPreviousPage = useCallback(() => navigate('prev'), [navigate])
@@ -372,6 +467,29 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       console.warn('No rendition available for chapter navigation')
     }
   }, [])
+
+  // Keep a live ref of selectionMode for iframe styling logic
+  React.useEffect(() => {
+    selectionModeRef.current = selectionMode
+    try {
+      // When selection mode toggles, update current contents user-select
+      const unsafeContents = (renditionRef.current as unknown as { getContents?: () => unknown })?.getContents?.()
+      const contentsList: EpubContentsLike[] = Array.isArray(unsafeContents)
+        ? (unsafeContents as EpubContentsLike[])
+        : unsafeContents
+          ? [unsafeContents as EpubContentsLike]
+          : []
+      contentsList.forEach((contents: EpubContentsLike) => {
+        const doc = contents.document
+        if (!doc) return
+        const body = doc.body
+        if (body) {
+          body.style.userSelect = selectionMode ? 'text' : 'none'
+          ;(body.style as ExtendedStyle).webkitUserSelect = selectionMode ? 'text' : 'none'
+        }
+      })
+    } catch {}
+  }, [selectionMode])
 
   // Load saved reading progress
   React.useEffect(() => {
@@ -394,63 +512,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     return () => clearTimeout(timeout)
   }, [isLoading, error])
 
-  // Test URL accessibility
-  React.useEffect(() => {
-    const testUrl = async () => {
-      try {
-        console.log('Testing URL accessibility:', absoluteUrl)
-        const response = await fetch(absoluteUrl, { 
-          method: 'HEAD',
-          mode: 'cors',
-        })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-        
-        console.log('✅ URL is accessible')
-      } catch (error) {
-        console.error('❌ URL accessibility test failed:', error)
-        setError(`Cannot access book file: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        setIsLoading(false)
-      }
-    }
-
-    if (absoluteUrl && isLoading && !error) {
-      testUrl()
-    }
-  }, [absoluteUrl, isLoading, error])
-
-  // Force a DOM check for ReactReader content
-  React.useEffect(() => {
-    if (!isLoading && !error) {
-      const checkInterval = setInterval(() => {
-        const container = document.querySelector('[data-testid="react-reader"]') || 
-                         document.querySelector('.react-reader-container') ||
-                         document.querySelector('iframe[title="epub-reader"]')
-        
-        if (container) {
-          console.log('📚 Found ReactReader container:', container)
-          console.log('📚 Container styles:', {
-            display: getComputedStyle(container).display,
-            visibility: getComputedStyle(container).visibility,
-            width: (container as HTMLElement).offsetWidth || getComputedStyle(container).width,
-            height: (container as HTMLElement).offsetHeight || getComputedStyle(container).height,
-            zIndex: getComputedStyle(container).zIndex
-          })
-          clearInterval(checkInterval)
-        } else {
-          console.warn('⚠️ ReactReader container not found, retrying...')
-        }
-      }, 1000)
-
-      // Clean up after 10 seconds
-      setTimeout(() => clearInterval(checkInterval), 10000)
-      
-      return () => clearInterval(checkInterval)
-    }
-  }, [isLoading, error])
-
   // Handle window resize to update EPUB dimensions
   React.useEffect(() => {
     const handleResize = () => {
@@ -471,20 +532,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Force initial resize when rendition and container are both available
-  React.useEffect(() => {
-    if (renditionRef.current && containerRef.current && !isLoading && !error) {
-      setTimeout(() => {
-        const width = containerRef.current!.offsetWidth
-        const height = containerRef.current!.offsetHeight
-        console.log('🔧 Initial force resize with container dimensions:', { width, height })
-        
-        if (width > 0 && height > 0) {
-          renditionRef.current!.resize(width, height)
-        }
-      }, 300)
-    }
-  }, [isLoading, error])
 
   // Keyboard navigation with debugging
   React.useEffect(() => {
@@ -505,61 +552,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [goToNextPage, goToPreviousPage])
-
-  // Define our own reader styles
-  const readerStyles: IReactReaderStyle = {
-    container: {
-      height: '100%',
-      width: '100%',
-      overflow: 'hidden',
-    },
-    readerArea: {
-      position: 'relative',
-      height: '100%',
-      width: '100%',
-      overflow: 'hidden',
-    },
-    reader: {
-      position: 'relative',
-      height: '100%',
-      width: '100%',
-      background: '#ffffff',
-      color: '#333333',
-    },
-    swipeWrapper: {
-      height: '100%',
-      width: '100%',
-    },
-    tocArea: {
-      background: '#f8fafc',
-      minWidth: '300px',
-      height: '100%',
-    },
-    tocButtonBar: {
-      background: '#ffffff',
-      borderBottom: '1px solid #e2e8f0',
-      padding: '12px',
-    },
-    tocButton: {
-      color: '#64748b',
-      fontSize: '14px',
-    },
-    tocButtonExpanded: {
-      background: '#f1f5f9',
-    },
-    containerExpanded: {},
-    titleArea: {},
-    prev: {},
-    next: {},
-    arrow: {},
-    arrowHover: {},
-    tocBackground: {},
-    toc: {},
-    tocAreaButton: {},
-    tocButtonBarTop: {},
-    loadingView: {},
-    tocButtonBottom: {}
-  }
 
   // Swipe gestures (mobile): left = next page, right = previous page
   const swipeHandlers = useSwipeable({
@@ -591,8 +583,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         height: '100dvh',
         overscrollBehavior: 'contain'
       }}
-      onTouchMove={(e) => { e.preventDefault(); e.stopPropagation() }}
-      onWheel={(e) => { e.preventDefault(); e.stopPropagation() }}
     >
       {/* Controls Overlay */}
       {controlsVisible && (
@@ -759,7 +749,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
       {/* Mobile tap zones for page navigation */}
       <button
-        className="md:hidden absolute inset-y-0 left-0 w-1/3 z-10"
+        className="md:hidden absolute inset-y-0 left-0 w-1/5 z-10"
         style={{ touchAction: 'manipulation' }}
         aria-label="Previous page"
         onTouchStart={(e) => e.stopPropagation()}
@@ -771,7 +761,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         disabled={isNavigating}
       />
       <button
-        className="md:hidden absolute inset-y-0 right-0 w-1/3 z-10"
+        className="md:hidden absolute inset-y-0 right-0 w-1/5 z-10"
         style={{ touchAction: 'manipulation' }}
         aria-label="Next page"
         onTouchStart={(e) => e.stopPropagation()}
@@ -849,6 +839,26 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           style={{ touchAction: 'pan-y' }}
           {...swipeProps}
         >
+          {/* Transition overlay for page turns */}
+          {isTransitioning && transitionDirection && (
+            <div className="pointer-events-none absolute inset-0 z-40">
+              <div
+                className={`h-full w-full bg-gradient-to-r from-transparent via-black/10 to-transparent animate-[slide_180ms_ease-out] ${transitionDirection === 'prev' ? 'direction-reverse' : ''}`}
+                style={{
+                  // Fallback transform-based animation when keyframes are not available
+                  willChange: 'transform, opacity',
+                }}
+              />
+              <style jsx>{`
+                @keyframes slide {
+                  from { transform: translateX(-100%); opacity: 0.9; }
+                  to { transform: translateX(100%); opacity: 0.6; }
+                }
+                .direction-reverse { animation-direction: reverse; }
+              `}</style>
+            </div>
+          )}
+
           <ReactReaderLazy
             url={absoluteUrl}
             location={location}
@@ -857,7 +867,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             getRendition={getRendition}
             showToc={false}
             readerStyles={{
-              ...readerStyles,
+              ...baseReaderStyles,
               container: {
                 height: '100%',
                 width: '100%',
@@ -908,6 +918,55 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               <div>Selection: {selectionMode ? 'On' : 'Off'}</div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Reading progress bar + scrubber */}
+      {!error && (
+        <div
+          className="absolute left-0 right-0 bottom-0 z-40 px-4 pb-3"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+        >
+          <div className="mx-auto max-w-3xl">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-[width] duration-200 ease-out"
+                style={{ width: `${Math.max(0, Math.min(100, progress.book))}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+              <div>Chapter: {progress.chapter}%</div>
+              <div>Book: {progress.book}%</div>
+              <div>~{progress.timeLeft} min left</div>
+            </div>
+            {totalLocations > 0 && (
+              <div className="mt-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={progress.book}
+                  onChange={(e) => {
+                    try {
+                      const pct = Number(e.target.value) / 100
+                      const r = renditionRef.current
+                      const book = r?.book
+                      const cfi = book?.locations?.cfiFromPercentage?.(pct)
+                      const displayFn = renditionRef.current && (renditionRef.current.display as ((cfi: string | number) => void) | undefined)
+                      if (cfi && displayFn) {
+                        displayFn(cfi)
+                      }
+                    } catch (err) {
+                      console.warn('Failed to scrub to percentage:', err)
+                    }
+                  }}
+                  className="w-full"
+                  aria-label="Scrub reading position"
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -985,109 +1044,3 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     </div>
   )
 } 
-
-type MobileControlsProps = {
-  selectionMode: boolean
-  setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>
-  onPrev: () => void
-  onNext: () => void
-  onClose: () => void
-  isNavigating: boolean
-  fontSizePct: number
-  setFontSizePct: (value: number) => void
-  themeName: 'light' | 'sepia'
-  setThemeName: (value: 'light' | 'sepia') => void
-}
-
-function MobileControls(props: MobileControlsProps) {
-  const {
-    selectionMode,
-    setSelectionMode,
-    onPrev,
-    onNext,
-    onClose,
-    isNavigating,
-    fontSizePct,
-    setFontSizePct,
-    themeName,
-    setThemeName,
-  } = props
-
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
-
-  return (
-    <>
-      {/* FAB */}
-      <button
-        className="md:hidden fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg focus:outline-none"
-        aria-label="Reader menu"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setIsMenuOpen((v) => !v)
-        }}
-        style={{ minWidth: 44, minHeight: 44 }}
-      >
-        ☰
-      </button>
-
-      {/* Bottom sheet */}
-      {isMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-40"
-          onClick={() => setIsMenuOpen(false)}
-        >
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="absolute left-0 right-0 bottom-0 bg-background rounded-t-xl shadow-xl p-4 space-y-3"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto h-1 w-10 bg-muted rounded" />
-            <div className="flex items-center justify-between">
-              <Button variant="outline" className="h-11" onClick={onPrev} disabled={isNavigating}>
-                <ChevronLeft className="h-5 w-5 mr-2" /> Previous
-              </Button>
-              <Button variant="outline" className="h-11" onClick={onNext} disabled={isNavigating}>
-                Next <ChevronRight className="h-5 w-5 ml-2" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Font size</span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" className="h-11 w-11" onClick={() => setFontSizePct(fontSizePct - 10)}>A-</Button>
-                <span className="text-xs w-10 text-center">{fontSizePct}%</span>
-                <Button variant="outline" className="h-11 w-11" onClick={() => setFontSizePct(fontSizePct + 10)}>A+</Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Theme</span>
-              <select
-                className="border rounded px-2 py-2 text-sm"
-                value={themeName}
-                onChange={(e) => setThemeName(e.target.value as 'light' | 'sepia')}
-              >
-                <option value="light">Light</option>
-                <option value="sepia">Sepia</option>
-              </select>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Selection mode</span>
-              <Button variant="outline" className="h-11" onClick={() => setSelectionMode(!selectionMode)}>
-                {selectionMode ? 'On' : 'Off'}
-              </Button>
-            </div>
-            <div className="pt-2 space-y-2">
-              <Button className="w-full h-11" variant="destructive" onClick={onClose}>
-                Close Reader
-              </Button>
-              <Button className="w-full h-11" variant="outline" onClick={() => setIsMenuOpen(false)}>
-                Close Menu
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
