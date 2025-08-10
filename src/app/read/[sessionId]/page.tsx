@@ -6,8 +6,6 @@ interface ReaderPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export const dynamic = 'force-dynamic'
-
 export default async function ReaderPage(props: ReaderPageProps) {
   const { sessionId } = await props.params
   const sp = await props.searchParams

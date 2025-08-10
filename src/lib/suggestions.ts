@@ -42,30 +42,30 @@ export async function getAuthorSuggestions(query: string, limit = 8, signal?: Ab
   return data
 }
 
-// export async function getGoogleBooksSuggestions(query: string, limit = 8): Promise<SuggestionItem[]> {
-//   const q = sanitizeQuery(query)
-//   if (!q) return []
-//   const key = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY
-//   const params = new URLSearchParams({
-//     q,
-//     printType: 'books',
-//     maxResults: String(Math.min(limit, 10)),
-//     fields: 'items(volumeInfo/title,volumeInfo/authors)',
-//   })
-//   if (key) params.set('key', key)
-//   const url = `${GOOGLE_BOOKS_API}?${params.toString()}`
-//   const res = await fetch(url, { cache: 'no-store' })
-//   if (!res.ok) return []
-//   const data = await res.json() as { items?: Array<{ volumeInfo?: { title?: string; authors?: string[] } }> }
-//   const items = (data.items || [])
-//     .map((it, idx) => ({
-//       id: String(idx),
-//       title: it.volumeInfo?.title || '',
-//       subtitle: (it.volumeInfo?.authors && it.volumeInfo.authors.length > 0) ? it.volumeInfo.authors.join(', ') : undefined,
-//     }))
-//     .filter(s => s.title)
-//   return items
-// }
+const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
+export async function getGoogleBooksSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
+  const q = sanitizeQuery(query)
+  if (!q) return []
+  const params = new URLSearchParams({
+    q,
+    printType: 'books',
+    maxResults: String(Math.min(limit, 10)),
+    fields: 'items(volumeInfo/title,volumeInfo/authors)'
+  })
+  const url = `${GOOGLE_BOOKS_API}?${params.toString()}`
+  const res = await fetch(url, { cache: 'no-store', signal })
+  if (!res.ok) return []
+  const data = await res.json() as { items?: Array<{ volumeInfo?: { title?: string; authors?: string[] } }> }
+  const items = (data.items || [])
+    .map((it, idx) => ({
+      id: String(idx),
+      title: it.volumeInfo?.title || '',
+      subtitle: (it.volumeInfo?.authors && it.volumeInfo.authors.length > 0) ? it.volumeInfo.authors.join(', ') : undefined,
+    }))
+    .filter(s => s.title)
+    .slice(0, limit)
+  return items
+}
 
 export async function getSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
   try {
@@ -78,7 +78,21 @@ export async function getSuggestions(query: string, limit = 8, signal?: AbortSig
     if (cached && now - cached.ts < CACHE_TTL_MS) {
       return cached.items
     }
-    const items = await getGutendexSuggestions(query, limit, signal)
+    // Parallel: Gutendex vs delayed Google fallback (3s)
+    const gutPromise = getGutendexSuggestions(query, limit, signal)
+    const fallbackPromise = new Promise<SuggestionItem[]>((resolve) => {
+      const timer = setTimeout(async () => {
+        if (signal?.aborted) { resolve([]); return }
+        resolve(await getGoogleBooksSuggestions(query, limit, signal))
+      }, 3000)
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          clearTimeout(timer)
+          resolve([])
+        }, { once: true })
+      }
+    })
+    const items = await Promise.race([gutPromise, fallbackPromise])
     SUGGESTIONS_CACHE.set(key, { ts: now, items })
     return items
   } catch {

@@ -3,9 +3,6 @@ import { getAuthorMetadata, getAuthorPortraitUrl } from "@/lib/wikipedia"
 import { AuthorCard } from "./_components/AuthorCard"
 import { AuthorSearch } from "./_components/AuthorSearch"
 
-export const dynamic = 'force-static'
-export const revalidate = 300
-
 const popularAuthors = [
   "William Shakespeare",
   "Jane Austen",

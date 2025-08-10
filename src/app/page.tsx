@@ -5,11 +5,6 @@ import { Book, getPopularBooks, getSuggestedSearchTerms } from "@/lib/gutendx"
 import { ArrowRight, BookOpen, Download, Globe, Star } from "lucide-react"
 import Link from "next/link"
 
-// Opt into static generation with ISR
-export const dynamic = 'force-static'
-export const revalidate = 300
-
-// Fallback books data in case API is unavailable
 const fallbackBooks: Book[] = [
   {
     id: 1342,

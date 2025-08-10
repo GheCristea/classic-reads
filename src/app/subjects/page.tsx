@@ -2,10 +2,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SUBJECTS, SUBJECT_EMOJI } from "@/lib/subjects"
 
-export const dynamic = 'force-static'
-export const revalidate = 300
-
-
 export default function SubjectsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
