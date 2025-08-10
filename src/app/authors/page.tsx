@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { getAuthorPortraitUrl } from "@/lib/wikipedia"
+import { getBooksByAuthor } from "@/lib/gutendx"
+import { getAuthorMetadata, getAuthorPortraitUrl } from "@/lib/wikipedia"
+import { AuthorCard } from "./_components/AuthorCard"
 import { AuthorSearch } from "./_components/AuthorSearch"
 
 export const dynamic = 'force-static'
@@ -29,42 +29,37 @@ const popularAuthors = [
 
 async function PopularAuthorsGrid() {
   const portraits = await Promise.all(
-    popularAuthors.map(async (name) => ({
-      name,
-      portrait: await getAuthorPortraitUrl(name, 320),
-    }))
+    popularAuthors.map(async (name) => {
+      const [portrait, meta] = await Promise.all([
+        getAuthorPortraitUrl(name, 360),
+        getAuthorMetadata(name),
+      ])
+
+      let topTitles: string[] = []
+      try {
+        const booksRes = await getBooksByAuthor(name)
+        const seen = new Set<string>()
+        topTitles = booksRes.results
+          .sort((a, b) => b.download_count - a.download_count)
+          .map((b) => b.title)
+          .filter((t) => {
+            if (seen.has(t)) return false
+            seen.add(t)
+            return true
+          })
+          .slice(0, 3)
+      } catch {
+        topTitles = []
+      }
+
+      return { name, portrait, meta, topTitles }
+    })
   )
 
   return (
     <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {portraits.filter(p => p.portrait).map(({ name, portrait }) => (
-        <Card key={name} className="group relative overflow-hidden hover:shadow-md transition-shadow">
-          {portrait ? (
-            <div className="relative w-full h-72 bg-muted overflow-hidden">
-              <img
-                src={portrait}
-                alt={name}
-                className="absolute inset-0 w-full object-cover transition-transform duration-500 origin-top -translate-y-[15%] group-hover:scale-105"
-                loading="lazy"
-              />
-
-              {/* Hover gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300" />
-
-              {/* Hover content */}
-              <div className="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
-                <h3 className="text-white text-lg md:text-xl font-semibold drop-shadow">{name}</h3>
-                <div className="mt-2">
-                  <Button asChild size="sm" variant="secondary" className="shadow">
-                    <a href={`/search?q=${encodeURIComponent(name)}`} aria-label={`View books by ${name}`}>View books</a>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full h-56 md:h-64 bg-muted" />
-          )}
-        </Card>
+      {portraits.filter(p => p.portrait).map(({ name, portrait, meta, topTitles }) => (
+        <AuthorCard key={name} name={name} portrait={portrait!} meta={meta} topTitles={topTitles} />
       ))}
     </div>
   )
