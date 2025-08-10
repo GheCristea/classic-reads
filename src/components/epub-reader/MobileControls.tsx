@@ -110,7 +110,7 @@ export function MobileControls(props: MobileControlsProps) {
     <>
       {!isMenuOpen && (
         <button
-          className="md:hidden fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg focus:outline-none"
+          className="md:hidden fixed bottom-16 right-5 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg focus:outline-none"
           aria-label="Reader menu"
           onClick={(e) => {
             e.preventDefault()
