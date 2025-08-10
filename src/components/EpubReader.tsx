@@ -607,6 +607,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => (!selectionMode ? goToNextPage() : undefined),
     onSwipedRight: () => (!selectionMode ? goToPreviousPage() : undefined),
+    onSwipedUp: () => {
+      if (controlsVisible && !showToc) {
+        setControlsVisible(false)
+      }
+    },
     preventScrollOnSwipe: true,
     trackMouse: false,
     delta: 50,
@@ -842,12 +847,17 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               setControlsVisible(true)
             }
           }}
-          onPointerMove={() => {
-            if (controlsVisible) return
-            setControlsVisible(true)
+          onTouchMove={(e) => {
+            if (!controlsVisible) return
+            const first = e.touches && e.touches[0]
+            if (!first) return
+            // If user swipes up significantly, hide controls
+            if (first.clientY < 48) {
+              setControlsVisible(false)
+            }
           }}
           onTouchStart={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
           style={{ touchAction: 'pan-y' }}
           {...swipeProps}
