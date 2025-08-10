@@ -993,9 +993,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                         const r = renditionRef.current
                         const book = r?.book
                         const cfi = book?.locations?.cfiFromPercentage?.(pct)
-                        const displayFn = renditionRef.current && renditionRef.current.display
-                        if (cfi && displayFn) {
-                          displayFn(cfi)
+                        if (cfi && r && r.display) {
+                          r.display(cfi)
                         }
                       }
                     } catch (err) {
@@ -1012,9 +1011,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                       const r = renditionRef.current
                       const book = r?.book
                       const cfi = book?.locations?.cfiFromPercentage?.(pct)
-                      const displayFn = renditionRef.current && renditionRef.current.display
-                      if (cfi && displayFn) {
-                        displayFn(cfi)
+                      if (cfi && r && r.display) {
+                        r.display(cfi)
                       }
                     } catch {}
                     setIsScrubbing(false)
@@ -1028,9 +1026,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                       const r = renditionRef.current
                       const book = r?.book
                       const cfi = book?.locations?.cfiFromPercentage?.(pct)
-                      const displayFn = renditionRef.current && renditionRef.current.display
-                      if (cfi && displayFn) {
-                        displayFn(cfi)
+                      if (cfi && r && r.display) {
+                        r.display(cfi)
                       }
                     } catch {}
                     setIsScrubbing(false)
@@ -1038,6 +1035,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                   }}
                   aria-label="Scrub reading position"
                   className="absolute inset-0 w-full h-8 opacity-0 cursor-pointer"
+                  onBlur={() => {
+                    setIsScrubbing(false)
+                    setScrubPct(null)
+                  }}
                 />
               )}
             </div>
