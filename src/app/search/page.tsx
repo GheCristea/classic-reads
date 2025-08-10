@@ -8,10 +8,6 @@ import { ApiErrorCard } from "../books/_components/ApiErrorCard"
 import { BookCard } from "../books/_components/BookCard"
 import { SearchBar } from "./_components/SearchBar"
 
-// Static search shell; redirects and results use cached fetch
-export const dynamic = 'force-static'
-export const revalidate = 300
-
 interface SearchPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
