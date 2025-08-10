@@ -40,6 +40,8 @@ export function SearchField({
   const [activeIndex, setActiveIndex] = React.useState(-1)
   const router = useRouter()
   const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const abortRef = React.useRef<AbortController | null>(null)
+  const debounceRef = React.useRef<number | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,30 +57,35 @@ export function SearchField({
   const heightClass = size === 'lg' ? 'h-12 text-lg' : size === 'sm' ? 'h-9 text-sm' : 'h-10'
   const buttonSize = size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'default'
 
-  // Debounced suggestions
-  const debouncedFetch = React.useMemo(() => {
-    let handle: number | null = null
-    return (q: string) => {
-      if (handle) window.clearTimeout(handle)
-      handle = window.setTimeout(async () => {
-        const trimmed = q.trim()
-        if (!trimmed) {
-          setItems([])
-          setOpen(false)
-          setLoading(false)
-          return
-        }
-        try {
-          setLoading(true)
-          const data = await (fetchSuggestions ? fetchSuggestions(trimmed, 8) : getSuggestions(trimmed, 8))
-          setItems(data)
-          setOpen(data.length > 0)
-          setActiveIndex(-1)
-        } finally {
-          setLoading(false)
-        }
-      }, 200)
-    }
+  // Debounced suggestions with abort
+  const triggerFetch = React.useCallback((q: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    debounceRef.current = window.setTimeout(async () => {
+      const trimmed = q.trim()
+      if (!trimmed || trimmed.length < 3) {
+        setItems([])
+        setOpen(false)
+        setLoading(false)
+        return
+      }
+      try { abortRef.current?.abort() } catch {}
+      const controller = new AbortController()
+      abortRef.current = controller
+      try {
+        setLoading(true)
+        const data = await (fetchSuggestions
+          ? fetchSuggestions(trimmed, 8)
+          : getSuggestions(trimmed, 8, controller.signal))
+        if (controller.signal.aborted) return
+        setItems(data)
+        setOpen(data.length > 0)
+        setActiveIndex(-1)
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false)
+      }
+    }, 250)
   }, [fetchSuggestions])
 
   // Close dropdown on outside click
@@ -91,7 +98,11 @@ export function SearchField({
       }
     }
     document.addEventListener('mousedown', handleDocumentMouseDown)
-    return () => document.removeEventListener('mousedown', handleDocumentMouseDown)
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentMouseDown)
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+      try { abortRef.current?.abort() } catch {}
+    }
   }, [])
 
   return (
@@ -106,7 +117,7 @@ export function SearchField({
             onChange={(e) => {
               const value = e.target.value
               setQuery(value)
-              debouncedFetch(value)
+              triggerFetch(value)
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
