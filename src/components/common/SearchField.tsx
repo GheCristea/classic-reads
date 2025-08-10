@@ -39,6 +39,7 @@ export function SearchField({
   const [items, setItems] = React.useState<SuggestionItem[]>([])
   const [activeIndex, setActiveIndex] = React.useState(-1)
   const router = useRouter()
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,9 +81,22 @@ export function SearchField({
     }
   }, [fetchSuggestions])
 
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    function handleDocumentMouseDown(event: MouseEvent) {
+      const target = event.target as Node | null
+      if (containerRef.current && target && !containerRef.current.contains(target)) {
+        setOpen(false)
+        setActiveIndex(-1)
+      }
+    }
+    document.addEventListener('mousedown', handleDocumentMouseDown)
+    return () => document.removeEventListener('mousedown', handleDocumentMouseDown)
+  }, [])
+
   return (
     <form onSubmit={handleSubmit} className={cn('w-full', className)}>
-      <div className="flex gap-2">
+      <div ref={containerRef} className="flex gap-2">
         <div className="relative flex-1">
           <Search className={cn('absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground', size === 'lg' ? 'h-5 w-5' : '')} />
           <Input
