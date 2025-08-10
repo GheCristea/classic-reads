@@ -5,6 +5,7 @@ import { Book as BookType, formatAuthors, getEpubFormat } from "@/lib/gutendx"
 import { truncateText } from "@/lib/utils"
 import { Book as BookIcon, Download, User } from "lucide-react"
 import Link from "next/link"
+import StartReadingButton from "./StartReadingButton"
 
 interface BookCardProps {
   book: BookType
@@ -101,12 +102,11 @@ export function BookCard({ book, showFullDetails = false }: BookCardProps) {
         
         <div className="flex gap-2 w-full">
           {epubFormat && (
-            <Button asChild size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white">
-              <Link href={`/books/${book.id}#read-online`}>
-                <BookIcon className="h-3 w-3 mr-1" />
-                Read
-              </Link>
-            </Button>
+            <StartReadingButton
+              epubUrl={epubFormat.url}
+              bookId={book.id}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            />
           )}
           <Button asChild size="sm" variant="outline" className={epubFormat ? "flex-1" : "flex-1"}>
             <Link href={`/books/${book.id}`}>
