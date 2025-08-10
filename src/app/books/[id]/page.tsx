@@ -140,7 +140,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                           )}
                         </div>
                         <Button asChild variant="outline" size="sm">
-                          <Link href={`/search?author=${encodeURIComponent(author.name)}`}>
+                          <Link href={`/search?q=${encodeURIComponent(author.name)}`}>
                             More Books
                           </Link>
                         </Button>
@@ -288,7 +288,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">More by {book.authors[0]?.name}</h2>
               <Button asChild variant="outline">
-                <Link href={`/search?author=${encodeURIComponent(book.authors[0]?.name || "")}`}>
+                <Link href={`/search?q=${encodeURIComponent(book.authors[0]?.name || "")}`}>
                   View All
                 </Link>
               </Button>

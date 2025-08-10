@@ -54,7 +54,7 @@ export default function AuthorsPage() {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
-                <a href={`/search?author=${encodeURIComponent(name)}`}>View books</a>
+                <a href={`/search?q=${encodeURIComponent(name)}`}>View books</a>
               </Button>
             </CardContent>
           </Card>
