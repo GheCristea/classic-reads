@@ -1,4 +1,17 @@
 // Minimal Wikipedia image helper to fetch an author's portrait thumbnail
+type WikipediaResponse = {
+    query?: {
+        pages?: Record<string, {
+            thumbnail?: {
+                source?: string;
+            };
+            original?: {
+                source?: string;
+            };
+            missing?: boolean;
+        }>;
+    };
+};
 
 export async function getAuthorPortraitUrl(
   authorName: string,
@@ -31,11 +44,11 @@ export async function getAuthorPortraitUrl(
 
     if (!res.ok) return null;
 
-    const data = (await res.json()) as any;
+    const data = (await res.json()) as WikipediaResponse;
     const pages = data?.query?.pages;
     if (!pages) return null;
 
-    const firstPage = Object.values(pages)[0] as any;
+    const firstPage = Object.values(pages)[0];
     if (!firstPage || firstPage.missing) return null;
 
     const thumb: string | undefined = firstPage.thumbnail?.source || firstPage.original?.source;
