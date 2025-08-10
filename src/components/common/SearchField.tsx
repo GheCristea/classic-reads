@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getSuggestions, type SuggestionItem } from '@/lib/suggestions'
 import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -31,6 +32,10 @@ export function SearchField({
   onSearchSubmit,
 }: SearchFieldProps) {
   const [query, setQuery] = React.useState(defaultQuery)
+  const [open, setOpen] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [items, setItems] = React.useState<SuggestionItem[]>([])
+  const [activeIndex, setActiveIndex] = React.useState(-1)
   const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,10 +45,38 @@ export function SearchField({
     const href = buildHref ? buildHref(trimmed) : `/books?search=${encodeURIComponent(trimmed)}`
     router.push(href)
     onSearchSubmit?.()
+    setOpen(false)
+    setActiveIndex(-1)
   }
 
   const heightClass = size === 'lg' ? 'h-12 text-lg' : size === 'sm' ? 'h-9 text-sm' : 'h-10'
   const buttonSize = size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'default'
+
+  // Debounced suggestions
+  const debouncedFetch = React.useMemo(() => {
+    let handle: number | null = null
+    return (q: string) => {
+      if (handle) window.clearTimeout(handle)
+      handle = window.setTimeout(async () => {
+        const trimmed = q.trim()
+        if (!trimmed) {
+          setItems([])
+          setOpen(false)
+          setLoading(false)
+          return
+        }
+        try {
+          setLoading(true)
+          const data = await getSuggestions(trimmed, 8)
+          setItems(data)
+          setOpen(data.length > 0)
+          setActiveIndex(-1)
+        } finally {
+          setLoading(false)
+        }
+      }, 200)
+    }
+  }, [])
 
   return (
     <form onSubmit={handleSubmit} className={cn('w-full', className)}>
@@ -54,15 +87,68 @@ export function SearchField({
             type="text"
             placeholder={placeholder}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              setQuery(value)
+              debouncedFetch(value)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSubmit(e as unknown as React.FormEvent)
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setActiveIndex((i) => Math.min(i + 1, items.length - 1))
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setActiveIndex((i) => Math.max(i - 1, -1))
+              } else if (e.key === 'Escape') {
+                setOpen(false)
+                setActiveIndex(-1)
               }
             }}
             className={cn('pl-10', heightClass, inputClassName)}
             autoFocus={autoFocus}
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls="search-suggestions"
           />
+          {open && (
+            <div
+              id="search-suggestions"
+              role="listbox"
+              className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md"
+            >
+              {loading && (
+                <div className="px-3 py-2 text-sm text-muted-foreground">Loading…</div>
+              )}
+              {!loading && items.map((item, idx) => (
+                <button
+                  key={`${item.id}-${idx}`}
+                  role="option"
+                  aria-selected={idx === activeIndex}
+                  className={cn(
+                    'w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground',
+                    idx === activeIndex ? 'bg-accent text-accent-foreground' : ''
+                  )}
+                  onMouseDown={(e) => {
+                    // use mousedown so we don't blur before click
+                    e.preventDefault()
+                    const q = item.title
+                    setQuery(q)
+                    const href = buildHref ? buildHref(q) : `/books?search=${encodeURIComponent(q)}`
+                    router.push(href)
+                    onSearchSubmit?.()
+                    setOpen(false)
+                  }}
+                >
+                  <div className="text-sm font-medium line-clamp-1">{item.title}</div>
+                  {item.subtitle && (
+                    <div className="text-xs text-muted-foreground line-clamp-1">{item.subtitle}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {showButton && (
           <Button type="submit" size={buttonSize} className={heightClass.replace('text-lg', '')}>
