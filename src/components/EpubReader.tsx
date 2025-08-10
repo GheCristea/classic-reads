@@ -586,7 +586,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     >
       {/* Controls Overlay */}
       {controlsVisible && (
-        <div className="hidden md:block absolute top-0 left-0 right-0 z-30 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
           <div
             className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto"
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
@@ -700,19 +700,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         </div>
       )}
 
-      {/* Reveal Indicator */}
-      {!controlsVisible && (
-        <button
-          className="hidden md:block absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-background/60 hover:bg-background/80 text-foreground text-[11px] px-2 py-0.5 rounded-full shadow backdrop-blur-sm pointer-events-auto"
-          onClick={(e) => {
-            e.stopPropagation()
-            setControlsVisible(true)
-          }}
-          aria-label="Show reader controls"
-        >
-          Show controls
-        </button>
-      )}
+      {/* Reveal Indicator removed: controls now show on interaction across devices */}
 
       {/* Navigation Controls (show on tap/mobile too) */}
       <div className={`${controlsVisible ? 'block' : 'hidden'} md:block absolute top-1/2 left-4 transform -translate-y-1/2 z-40`}>
@@ -921,8 +909,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         </div>
       )}
 
-      {/* Reading progress bar + scrubber */}
-      {!error && (
+      {/* Reading progress bar + scrubber (show briefly with controls) */}
+      {!error && controlsVisible && (
         <div
           className="absolute left-0 right-0 bottom-0 z-40 px-4 pb-3"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
