@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { SUBJECTS } from "@/lib/subjects"
 import { Filter, Search, X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
@@ -25,18 +26,7 @@ const sortOptions = [
   { value: "descending", label: "Title Z-A" },
 ]
 
-const subjects = [
-  "Fiction",
-  "Philosophy", 
-  "Poetry",
-  "History",
-  "Science",
-  "Romance",
-  "Adventure",
-  "Mystery",
-  "Children's Literature",
-  "Biography",
-]
+// Using shared SUBJECTS list
 
 export function BookFilters() {
   const router = useRouter()
@@ -220,7 +210,7 @@ export function BookFilters() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {subjects.map((subject) => (
+            {SUBJECTS.map((subject: string) => (
               <Button
                 key={subject}
                 variant={activeFilters.topic === subject ? "default" : "ghost"}

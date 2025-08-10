@@ -1,24 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SUBJECTS } from "@/lib/subjects"
 
 export const dynamic = 'force-static'
 export const revalidate = 300
 
-const subjects: string[] = [
-  "Fiction",
-  "Philosophy",
-  "Poetry",
-  "History",
-  "Science",
-  "Romance",
-  "Adventure",
-  "Mystery",
-  "Children's Literature",
-  "Biography",
-  "Autobiography",
-  "Cookbooks",
-  "Travel",
-]
 
 export default function SubjectsPage() {
   return (
@@ -29,7 +15,7 @@ export default function SubjectsPage() {
       </div>
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {subjects.map((subject) => (
+        {SUBJECTS.map((subject: string) => (
           <Card key={subject} className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="text-lg">{subject}</CardTitle>
