@@ -111,8 +111,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   <CardContent>
                     <EpubReaderWrapper
                       epubUrl={epubFormat.url}
-                      title={book.title}
-                      author={authorText}
+                      bookId={book.id}
                     />
                   </CardContent>
                 </Card>

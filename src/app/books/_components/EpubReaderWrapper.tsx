@@ -2,18 +2,16 @@
 
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
-import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 interface EpubReaderWrapperProps {
   epubUrl: string
-  title: string
-  author: string
+  bookId?: number
 }
 
-export function EpubReaderWrapper({ epubUrl, title, author }: EpubReaderWrapperProps) {
-  const [isReaderOpen, setIsReaderOpen] = useState(false)
-  const [sessionUrl, setSessionUrl] = useState<string | null>(null)
+export function EpubReaderWrapper({ epubUrl, bookId }: EpubReaderWrapperProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const openReader = async () => {
@@ -34,32 +32,21 @@ export function EpubReaderWrapper({ epubUrl, title, author }: EpubReaderWrapperP
       }
 
       const data = await response.json()
-      
-      // Set session cookie for middleware
+
+      // Set session cookie for middleware (used for any direct content paths)
       document.cookie = `epub-session-id=${data.sessionId}; path=/; max-age=7200`
-      
-      setSessionUrl(data.epubUrl)
-      setIsReaderOpen(true)
-      
-      // Prevent background scrolling when reader is open
-      document.body.style.overflow = 'hidden'
+
+      // Prefer compact URL: only include book id if available
+      const url = bookId
+        ? `/read/${data.sessionId}?b=${encodeURIComponent(String(bookId))}`
+        : `/read/${data.sessionId}`
+      router.push(url)
     } catch (error) {
       console.error('Error opening EPUB reader:', error)
       alert('Failed to open EPUB reader. Please try again.')
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const closeReader = () => {
-    setIsReaderOpen(false)
-    setSessionUrl(null)
-    
-    // Clear session cookie
-    document.cookie = 'epub-session-id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    
-    // Restore background scrolling
-    document.body.style.overflow = 'unset'
   }
 
   return (
@@ -89,22 +76,6 @@ export function EpubReaderWrapper({ epubUrl, title, author }: EpubReaderWrapperP
           • No download required
         </p>
       </div>
-
-      {/* EPUB Reader Modal */}
-      {isReaderOpen && sessionUrl && (
-        <DynamicEpubReader
-          url={sessionUrl}
-          title={title}
-          author={author}
-          progressKey={epubUrl}
-          onClose={closeReader}
-        />
-      )}
     </>
   )
 } 
-
-// Lazy-load heavy reader only when needed
-const DynamicEpubReader = dynamic(() => import('@/components/EpubReader').then(m => m.EpubReader), {
-  ssr: false,
-})
