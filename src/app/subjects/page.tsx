@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SUBJECTS } from "@/lib/subjects"
+import { SUBJECTS, SUBJECT_EMOJI } from "@/lib/subjects"
 
 export const dynamic = 'force-static'
 export const revalidate = 300
@@ -18,7 +18,12 @@ export default function SubjectsPage() {
         {SUBJECTS.map((subject: string) => (
           <Card key={subject} className="hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle className="text-lg">{subject}</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="text-xl" aria-hidden>
+                  {SUBJECT_EMOJI[subject as keyof typeof SUBJECT_EMOJI]}
+                </span>
+                <span>{subject}</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
