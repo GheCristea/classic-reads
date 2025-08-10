@@ -54,6 +54,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const [totalLocations, setTotalLocations] = useState<number>(0)
   const renditionRef = useRef<RenditionWithBook>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [isScrubbing, setIsScrubbing] = useState(false)
+  const [scrubPct, setScrubPct] = useState<number | null>(null)
+  const lastScrubRef = useRef<number>(0)
+  const SCRUB_THROTTLE_MS = 100
   const autoHideTimerRef = useRef<number | null>(null)
   const prevOverflowRef = useRef<string>('')
   const prevHtmlOverflowRef = useRef<string>('')
@@ -962,11 +966,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-muted" />
               <div
                 className="absolute left-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-primary transition-[width] duration-200 ease-out"
-                style={{ width: `${Math.max(0, Math.min(100, progress.book))}%` }}
+                style={{ width: `${Math.max(0, Math.min(100, isScrubbing && scrubPct != null ? scrubPct : progress.book))}%` }}
               />
               <div
                 className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-white ring-2 ring-primary shadow"
-                style={{ left: `${Math.max(0, Math.min(100, progress.book))}%` }}
+                style={{ left: `${Math.max(0, Math.min(100, isScrubbing && scrubPct != null ? scrubPct : progress.book))}%` }}
                 aria-hidden="true"
               />
               {totalLocations > 0 && (
@@ -976,9 +980,35 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                   max={100}
                   step={1}
                   value={progress.book}
-                  onChange={(e) => {
+                  onInput={(e) => {
                     try {
-                      const pct = Number(e.target.value) / 100
+                      const raw = Number((e.target as HTMLInputElement).value)
+                      const clamped = Math.max(0, Math.min(100, raw))
+                      setIsScrubbing(true)
+                      setScrubPct(clamped)
+                      const now = Date.now()
+                      if (now - lastScrubRef.current > SCRUB_THROTTLE_MS) {
+                        lastScrubRef.current = now
+                        const pct = clamped / 100
+                        const r = renditionRef.current
+                        const book = r?.book
+                        const cfi = book?.locations?.cfiFromPercentage?.(pct)
+                        const displayFn = renditionRef.current && renditionRef.current.display
+                        if (cfi && displayFn) {
+                          displayFn(cfi)
+                        }
+                      }
+                    } catch (err) {
+                      console.warn('Failed to scrub to percentage:', err)
+                    }
+                  }}
+                  onMouseDown={() => setIsScrubbing(true)}
+                  onTouchStart={() => setIsScrubbing(true)}
+                  onMouseUp={(e) => {
+                    try {
+                      const raw = Number((e.target as HTMLInputElement).value)
+                      const clamped = Math.max(0, Math.min(100, raw))
+                      const pct = clamped / 100
                       const r = renditionRef.current
                       const book = r?.book
                       const cfi = book?.locations?.cfiFromPercentage?.(pct)
@@ -986,9 +1016,25 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                       if (cfi && displayFn) {
                         displayFn(cfi)
                       }
-                    } catch (err) {
-                      console.warn('Failed to scrub to percentage:', err)
-                    }
+                    } catch {}
+                    setIsScrubbing(false)
+                    setScrubPct(null)
+                  }}
+                  onTouchEnd={(e) => {
+                    try {
+                      const raw = Number((e.target as HTMLInputElement).value)
+                      const clamped = Math.max(0, Math.min(100, raw))
+                      const pct = clamped / 100
+                      const r = renditionRef.current
+                      const book = r?.book
+                      const cfi = book?.locations?.cfiFromPercentage?.(pct)
+                      const displayFn = renditionRef.current && renditionRef.current.display
+                      if (cfi && displayFn) {
+                        displayFn(cfi)
+                      }
+                    } catch {}
+                    setIsScrubbing(false)
+                    setScrubPct(null)
                   }}
                   aria-label="Scrub reading position"
                   className="absolute inset-0 w-full h-8 opacity-0 cursor-pointer"
