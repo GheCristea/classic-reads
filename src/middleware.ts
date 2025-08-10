@@ -54,7 +54,8 @@ export function middleware(request: NextRequest) {
       
       console.log(`📍 Middleware redirect: ${pathname} -> ${newUrl.pathname}`)
       
-      return NextResponse.redirect(newUrl)
+      // Use 307 to preserve method and avoid extra roundtrips in some clients
+      return NextResponse.redirect(newUrl, { status: 307 })
     } else {
       console.log('❌ EPUB file request without session cookie:', pathname)
       
