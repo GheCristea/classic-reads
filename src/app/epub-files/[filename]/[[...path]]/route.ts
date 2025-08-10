@@ -95,7 +95,8 @@ export async function GET(
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Cache-Control': 'public, max-age=3600',
+          // Prefer edge/CDN caching with SWR for robustness
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
       })
     }
@@ -163,7 +164,7 @@ export async function GET(
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       },
     })
 

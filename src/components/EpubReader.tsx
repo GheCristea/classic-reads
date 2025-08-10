@@ -1,6 +1,4 @@
 "use client"
-
-import MobileControls from '@/components/epub-reader/MobileControls'
 import { baseReaderStyles } from '@/components/epub-reader/styles'
 import type {
   EpubContentsLike,
@@ -19,6 +17,10 @@ import { useSwipeable } from 'react-swipeable'
 const ReactReaderLazy = dynamic(() =>
   import('react-reader').then((m) => ({ default: m.ReactReader })),
   { ssr: false }
+)
+
+const MobileControlsLazy = dynamic(() =>
+  import('@/components/epub-reader/MobileControls').then((m) => m.default)
 )
 
 interface EpubReaderProps {
@@ -1012,7 +1014,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       )}
 
       {/* Mobile floating action button and bottom sheet */}
-      <MobileControls
+      <MobileControlsLazy
         selectionMode={selectionMode}
         setSelectionMode={setSelectionMode}
         onPrev={goToPreviousPage}
