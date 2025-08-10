@@ -27,6 +27,30 @@ export async function getGutendexSuggestions(query: string, limit = 8): Promise<
   return items
 }
 
+// Author suggestions using the same Gutendex endpoint, but extract unique author names
+export async function getAuthorSuggestions(query: string, limit = 8): Promise<SuggestionItem[]> {
+  const q = sanitizeQuery(query)
+  if (!q) return []
+  const url = `${GUTENDEX_API}?search=${encodeURIComponent(q)}&page=1`
+  const res = await fetch(url, { next: { revalidate: 60 } })
+  if (!res.ok) return []
+  const data = await res.json() as { results?: Array<{ id: number; authors?: Array<{ name: string }> }> }
+  const seen = new Set<string>()
+  const authors: SuggestionItem[] = []
+  for (const b of (data.results || [])) {
+    for (const a of (b.authors || [])) {
+      const name = a.name.trim()
+      if (!seen.has(name)) {
+        seen.add(name)
+        authors.push({ id: name, title: name })
+        if (authors.length >= limit) break
+      }
+    }
+    if (authors.length >= limit) break
+  }
+  return authors
+}
+
 // export async function getGoogleBooksSuggestions(query: string, limit = 8): Promise<SuggestionItem[]> {
 //   const q = sanitizeQuery(query)
 //   if (!q) return []

@@ -18,6 +18,7 @@ interface SearchFieldProps {
   autoFocus?: boolean
   buildHref?: (query: string) => string
   onSearchSubmit?: () => void
+  fetchSuggestions?: (query: string, limit: number) => Promise<SuggestionItem[]>
 }
 
 export function SearchField({
@@ -30,6 +31,7 @@ export function SearchField({
   autoFocus = false,
   buildHref,
   onSearchSubmit,
+  fetchSuggestions,
 }: SearchFieldProps) {
   const [query, setQuery] = React.useState(defaultQuery)
   const [open, setOpen] = React.useState(false)
@@ -67,7 +69,7 @@ export function SearchField({
         }
         try {
           setLoading(true)
-          const data = await getSuggestions(trimmed, 8)
+          const data = await (fetchSuggestions ? fetchSuggestions(trimmed, 8) : getSuggestions(trimmed, 8))
           setItems(data)
           setOpen(data.length > 0)
           setActiveIndex(-1)
@@ -76,7 +78,7 @@ export function SearchField({
         }
       }, 200)
     }
-  }, [])
+  }, [fetchSuggestions])
 
   return (
     <form onSubmit={handleSubmit} className={cn('w-full', className)}>
