@@ -1,6 +1,6 @@
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -19,12 +19,18 @@ export const metadata: Metadata = {
   description: "Explore over 70,000 free classic books from Project Gutenberg. Discover timeless literature, poetry, philosophy, and more.",
   keywords: ["classic books", "free books", "Project Gutenberg", "literature", "poetry", "philosophy"],
   authors: [{ name: "Classic Reads" }],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   openGraph: {
     title: "Classic Reads - Discover Timeless Literature",
     description: "Explore over 70,000 free classic books from Project Gutenberg",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
