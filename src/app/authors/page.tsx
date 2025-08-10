@@ -1,6 +1,6 @@
-import { SearchField } from "@/components/common/SearchField"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AuthorSearch } from "./_components/AuthorSearch"
 
 export const dynamic = 'force-static'
 export const revalidate = 300
@@ -35,16 +35,6 @@ const popularAuthors = Array.from(new Set([
   "Oscar Wilde",
 ]))
 
-function toSlug(name: string): string {
-  return encodeURIComponent(
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/['’]/g, '')
-      .replace(/\s+/g, '-')
-  )
-}
-
 export default function AuthorsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -52,12 +42,7 @@ export default function AuthorsPage() {
         <h1 className="text-3xl md:text-4xl font-bold">Browse by Author</h1>
         <p className="text-muted-foreground">Search or pick from popular authors</p>
         <div className="max-w-xl mx-auto mt-4">
-          <SearchField
-            placeholder="Search authors..."
-            size="lg"
-            showButton
-            buildHref={(q) => `/authors/${toSlug(q)}`}
-          />
+          <AuthorSearch />
         </div>
       </div>
 
@@ -69,7 +54,7 @@ export default function AuthorsPage() {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
-                <a href={`/authors/${toSlug(name)}`}>View books</a>
+                <a href={`/search?author=${encodeURIComponent(name)}`}>View books</a>
               </Button>
             </CardContent>
           </Card>

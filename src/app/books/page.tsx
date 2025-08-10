@@ -7,10 +7,6 @@ import { BookCard } from "./_components/BookCard"
 import { BookFilters } from "./_components/BookFilters"
 import { Pagination } from "./_components/Pagination"
 
-// Static shell with streaming; data uses cached fetch
-export const dynamic = 'force-static'
-export const revalidate = 300
-
 interface BooksPageProps {
   searchParams: Promise<{
     page?: string

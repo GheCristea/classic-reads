@@ -36,7 +36,7 @@ export default function SubjectsPage() {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
-                <a href={`/books?topic=${encodeURIComponent(subject)}`}>View books</a>
+                <a href={`/search?topic=${encodeURIComponent(subject)}`}>View books</a>
               </Button>
             </CardContent>
           </Card>
