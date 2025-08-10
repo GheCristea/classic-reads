@@ -9,10 +9,7 @@ import { BookCard } from "../books/_components/BookCard"
 import { SearchBar } from "./_components/SearchBar"
 
 interface SearchPageProps {
-  searchParams: Promise<{
-    q?: string
-    page?: string
-  }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 interface SearchResultsProps {
@@ -89,12 +86,32 @@ async function SearchResults({ searchParams }: SearchResultsProps) {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const resolved = await searchParams
-  const query = resolved.q
+  const query = (resolved.q as string | undefined) ?? (resolved.search as string | undefined)
   const suggestedTerms = getSuggestedSearchTerms()
 
   // If there's a query but we're not on the books page, redirect to books with search
-  if (query && query.trim()) {
-    redirect(`/books?search=${encodeURIComponent(query.trim())}`)
+  const topic = resolved.topic as string | undefined
+  const languages = resolved.languages as string | undefined
+  const sort = resolved.sort as string | undefined
+  const copyright = resolved.copyright as string | undefined
+  const page = resolved.page as string | undefined
+
+  if (
+    (query && query.trim()) ||
+    topic !== undefined ||
+    languages !== undefined ||
+    sort !== undefined ||
+    copyright !== undefined ||
+    page !== undefined
+  ) {
+    const params = new URLSearchParams()
+    if (query && query.trim()) params.set("search", query.trim())
+    if (topic) params.set("topic", topic)
+    if (languages) params.set("languages", languages)
+    if (sort) params.set("sort", sort)
+    if (copyright) params.set("copyright", copyright)
+    if (page) params.set("page", page)
+    redirect(`/books?${params.toString()}`)
   }
 
   return (
@@ -120,7 +137,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       {/* Search Results */}
       {query && (
         <Suspense fallback={<SearchSkeleton />}>
-          <SearchResults searchParams={resolved} />
+          <SearchResults searchParams={{ q: query, page: (resolved.page as string | undefined) }} />
         </Suspense>
       )}
 
