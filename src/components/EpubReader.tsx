@@ -9,7 +9,7 @@ import type {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { NavItem } from 'epubjs'
-import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useRef, useState } from 'react'
 import { useSwipeable } from 'react-swipeable'
@@ -21,6 +21,11 @@ const ReactReaderLazy = dynamic(() =>
 
 const MobileControlsLazy = dynamic(() =>
   import('@/components/epub-reader/MobileControls').then((m) => m.default)
+)
+
+const DesktopArrowsLazy = dynamic(() =>
+  import('@/components/epub-reader/DesktopArrows').then((m) => m.default),
+  { ssr: false }
 )
 
 interface EpubReaderProps {
@@ -110,9 +115,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
   const locationChanged = useCallback((epubcfi: string) => {
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Location changed to:', epubcfi)
-      }
       setLocation(epubcfi)
       localStorage.setItem(progressStorageKey, epubcfi)
     } catch (error) {
@@ -123,9 +125,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   }, [progressStorageKey])
 
   const tocChanged = useCallback((toc: NavItem[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('TOC received:', toc)
-    }
     setToc(toc)
   }, [])
 
@@ -180,10 +179,6 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   }, [controlsVisible, showToc, scheduleAutoHide])
 
   const getRendition = useCallback((rendition: RenditionWithBook) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Rendition received:', rendition)
-    }
-    
     if (!rendition) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Rendition is null or undefined')
@@ -757,38 +752,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
       {/* Reveal Indicator removed: controls now show on interaction across devices */}
 
-      {/* Navigation Controls (show on tap/mobile too) */}
-      <div className={`${controlsVisible ? 'block' : 'hidden'} md:block absolute top-1/2 left-4 transform -translate-y-1/2 z-40`}>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            goToPreviousPage()
-          }}
-          className="bg-background/80 hover:bg-background shadow h-11 w-11 backdrop-blur-sm"
-          disabled={isNavigating}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-      </div>
-      
-      <div className={`${controlsVisible ? 'block' : 'hidden'} md:block absolute top-1/2 right-4 transform -translate-y-1/2 z-40`}>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            goToNextPage()
-          }}
-          className="bg-background/80 hover:bg-background shadow h-11 w-11 backdrop-blur-sm"
-          disabled={isNavigating}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
+      {/* Desktop-only navigation arrows (hidden on mobile) */}
+      <DesktopArrowsLazy
+        visible={controlsVisible}
+        isNavigating={isNavigating}
+        onPrev={goToPreviousPage}
+        onNext={goToNextPage}
+      />
 
       {/* Mobile tap zones for page navigation */}
       <button
@@ -937,7 +907,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             }}
             epubOptions={{
               allowPopups: false,
-              allowScriptedContent: false,
+              // Needed to avoid blocked script execution inside sandboxed iframe created by epub.js
+              // Only enable for trusted EPUB sources
+              allowScriptedContent: true,
             }}
             loadingView={
               <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
@@ -1014,7 +986,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               )}
             </div>
             <div className="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground">
-              <div>Chapter: {Math.max(0, Math.min(100, Math.round(progress.chapter)))}%</div>
+              <div>Page: {Math.max(0, Math.min(100, Math.round(progress.chapter)))}%</div>
               <span>•</span>
               <div>Book: {Math.max(0, Math.min(100, Math.round(progress.book)))}%</div>
               <span>•</span>
