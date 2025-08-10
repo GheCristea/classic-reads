@@ -641,8 +641,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         overscrollBehavior: 'contain'
       }}
     >
-      {/* Controls Overlay */}
-      {controlsVisible && (
+      {/* Controls Overlay (hidden when TOC is open) */}
+      {controlsVisible && !showToc && (
         <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
           <div
             className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-gradient-to-b from-background/80 to-transparent backdrop-blur-sm pointer-events-auto"
@@ -1090,9 +1090,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
       {/* Table of Contents Overlay */}
       {showToc && toc.length > 0 && (
-        <div className="absolute top-20 left-4 w-80 max-h-[calc(100vh-120px)] overflow-y-auto z-20">
+        <div className="absolute top-20 left-4 w-80 max-h-[calc(100vh-120px)] overflow-y-auto z-50">
           <Card className="shadow-lg">
-            <CardHeader>
+            <CardHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Table of Contents</CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => setShowToc(false)}>
