@@ -4,7 +4,7 @@ export interface SuggestionItem {
   subtitle?: string
 }
 
-const GUTENDEX_API = 'https://gutendex.com/books'
+const LOCAL_SUGGEST_API = '/api/suggest'
 
 // Simple in-memory cache for suggestions
 type CacheEntry = { ts: number; items: SuggestionItem[] }
@@ -19,7 +19,7 @@ function sanitizeQuery(query: string): string {
 export async function getGutendexSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
   const q = sanitizeQuery(query)
   if (!q) return []
-  const url = `${GUTENDEX_API}?search=${encodeURIComponent(q)}&page=1`
+  const url = `${LOCAL_SUGGEST_API}?q=${encodeURIComponent(q)}&limit=${limit}`
   const res = await fetch(url, { cache: 'no-store', signal })
   if (!res.ok) return []
   const data = await res.json() as { results?: Array<{ id: number; title: string; authors?: Array<{ name: string }> }> }
@@ -35,24 +35,11 @@ export async function getGutendexSuggestions(query: string, limit = 8, signal?: 
 export async function getAuthorSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
   const q = sanitizeQuery(query)
   if (!q) return []
-  const url = `${GUTENDEX_API}?search=${encodeURIComponent(q)}&page=1`
+  const url = `${LOCAL_SUGGEST_API}?q=${encodeURIComponent(q)}&type=authors&limit=${limit}`
   const res = await fetch(url, { cache: 'no-store', signal })
   if (!res.ok) return []
-  const data = await res.json() as { results?: Array<{ id: number; authors?: Array<{ name: string }> }> }
-  const seen = new Set<string>()
-  const authors: SuggestionItem[] = []
-  for (const b of (data.results || [])) {
-    for (const a of (b.authors || [])) {
-      const name = a.name.trim()
-      if (!seen.has(name)) {
-        seen.add(name)
-        authors.push({ id: name, title: name })
-        if (authors.length >= limit) break
-      }
-    }
-    if (authors.length >= limit) break
-  }
-  return authors
+  const data = await res.json() as SuggestionItem[]
+  return data
 }
 
 // export async function getGoogleBooksSuggestions(query: string, limit = 8): Promise<SuggestionItem[]> {
