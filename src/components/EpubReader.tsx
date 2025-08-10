@@ -1058,11 +1058,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                   }}
                 >
                   <div className="font-medium">{chapter.label}</div>
-                  {chapter.subitems && (
+                  {((chapter.subitems?.length) || 0) > 0 ? (
                     <div className="text-xs text-muted-foreground mt-1">
-                      {chapter.subitems.length} sections
+                      {chapter.subitems?.length || 0} sections
                     </div>
-                  )}
+                  ): null}
                 </button>
               ))}
             </CardContent>
