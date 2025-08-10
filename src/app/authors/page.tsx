@@ -5,7 +5,7 @@ import { AuthorSearch } from "./_components/AuthorSearch"
 export const dynamic = 'force-static'
 export const revalidate = 300
 
-const popularAuthors = Array.from(new Set([
+const popularAuthors = [
   "William Shakespeare",
   "Jane Austen",
   "Charles Dickens",
@@ -24,16 +24,7 @@ const popularAuthors = Array.from(new Set([
   "Virginia Woolf",
   "George Orwell",
   "Oscar Wilde",
-  "Virginia Woolf",
-  "George Orwell",
-  "Oscar Wilde",
-  "Virginia Woolf",
-  "George Orwell",
-  "Oscar Wilde",
-  "Virginia Woolf",
-  "George Orwell",
-  "Oscar Wilde",
-]))
+];
 
 export default function AuthorsPage() {
   return (
