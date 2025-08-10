@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getAuthorPortraitUrl } from "@/lib/wikipedia"
 import { AuthorSearch } from "./_components/AuthorSearch"
 
 export const dynamic = 'force-static'
@@ -26,6 +27,44 @@ const popularAuthors = [
   "Oscar Wilde",
 ];
 
+async function PopularAuthorsGrid() {
+  const portraits = await Promise.all(
+    popularAuthors.map(async (name) => ({
+      name,
+      portrait: await getAuthorPortraitUrl(name, 320),
+    }))
+  )
+
+  return (
+    <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {portraits.filter(p => p.portrait).map(({ name, portrait }) => (
+        <Card key={name} className="hover:shadow-md transition-shadow overflow-hidden">
+          {portrait ? (
+            <div className="relative w-full h-48 bg-muted">
+              <img
+                src={portrait}
+                alt={name}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="w-full h-48 bg-muted" />
+          )}
+          <CardHeader>
+            <CardTitle className="text-lg">{name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <a href={`/search?q=${encodeURIComponent(name)}`}>View books</a>
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export default function AuthorsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -37,20 +76,8 @@ export default function AuthorsPage() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {popularAuthors.map((name) => (
-          <Card key={name} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg">{name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="outline" className="w-full">
-                <a href={`/search?q=${encodeURIComponent(name)}`}>View books</a>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Popular authors with portraits */}
+      <PopularAuthorsGrid />
     </div>
   )
 }
