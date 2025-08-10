@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { getAuthorPortraitUrl } from "@/lib/wikipedia"
 import { AuthorSearch } from "./_components/AuthorSearch"
 
@@ -38,27 +38,32 @@ async function PopularAuthorsGrid() {
   return (
     <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {portraits.filter(p => p.portrait).map(({ name, portrait }) => (
-        <Card key={name} className="hover:shadow-md transition-shadow overflow-hidden">
+        <Card key={name} className="group relative overflow-hidden hover:shadow-md transition-shadow">
           {portrait ? (
-            <div className="relative w-full h-48 bg-muted">
+            <div className="relative w-full h-72 bg-muted overflow-hidden">
               <img
                 src={portrait}
                 alt={name}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full object-cover transition-transform duration-500 origin-top -translate-y-[15%] group-hover:scale-105"
                 loading="lazy"
               />
+
+              {/* Hover gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300" />
+
+              {/* Hover content */}
+              <div className="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
+                <h3 className="text-white text-lg md:text-xl font-semibold drop-shadow">{name}</h3>
+                <div className="mt-2">
+                  <Button asChild size="sm" variant="secondary" className="shadow">
+                    <a href={`/search?q=${encodeURIComponent(name)}`} aria-label={`View books by ${name}`}>View books</a>
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="w-full h-48 bg-muted" />
+            <div className="w-full h-56 md:h-64 bg-muted" />
           )}
-          <CardHeader>
-            <CardTitle className="text-lg">{name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <a href={`/search?q=${encodeURIComponent(name)}`}>View books</a>
-            </Button>
-          </CardContent>
         </Card>
       ))}
     </div>
