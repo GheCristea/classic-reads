@@ -1,67 +1,50 @@
-"use client"
-
-import { EpubReader } from '@/components/EpubReader'
+import ClientReader from '@/components/epub-reader/ClientReader'
 import { fetchBookById } from '@/lib/gutendx'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
 
-export default function ReaderPage() {
-  const params = useParams<{ sessionId: string }>()
-  const searchParams = useSearchParams()
-  const router = useRouter()
+interface ReaderPageProps {
+  params: Promise<{ sessionId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
-  const sessionId = params?.sessionId
-  const hasSession = Boolean(sessionId)
+export default async function ReaderPage(props: ReaderPageProps) {
+  const { sessionId } = await props.params
+  const sp = await props.searchParams
 
-  const compactBookId = searchParams.get('b')
-  const [meta, setMeta] = useState<{ title: string; author: string; progressKey?: string }>({ title: 'Untitled', author: '' })
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        if (compactBookId) {
-          const book = await fetchBookById(Number(compactBookId))
-          if (!mounted) return
-          const authorText = (book.authors && book.authors.length > 0)
-            ? book.authors.map(a => a.name).join(', ')
-            : ''
-          // Prefer stable progress key from original EPUB URL if available
-          const epubUrl = (book.formats && Object.entries(book.formats).find(([k]) => k.includes('epub'))?.[1]) || undefined
-          setMeta({ title: book.title, author: authorText, progressKey: epubUrl })
-        }
-      } catch {
-        // Ignore meta errors; fallback to defaults
-      }
-    })()
-    return () => { mounted = false }
-  }, [compactBookId])
-
-  if (!hasSession) {
+  if (!sessionId) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center space-y-2">
           <p className="text-lg font-semibold">Invalid reader session</p>
-          <button
-            className="text-primary underline"
-            onClick={() => router.back()}
-          >
-            Go back
-          </button>
+          <a className="text-primary underline" href="#" onClick={(e) => { e.preventDefault(); history.back() }}>Go back</a>
         </div>
       </div>
     )
   }
 
+  // Build default meta, optionally enrich from book id in query
+  let title = 'Untitled'
+  let author = ''
+  let progressKey: string | undefined = undefined
+
+  const bookIdRaw = sp.b as string | undefined
+  if (bookIdRaw) {
+    try {
+      const book = await fetchBookById(Number(bookIdRaw))
+      title = book.title
+      author = (book.authors && book.authors.length > 0) ? book.authors.map(a => a.name).join(', ') : ''
+      const epubUrl = (book.formats && Object.entries(book.formats).find(([k]) => k.includes('epub'))?.[1]) || undefined
+      progressKey = epubUrl
+    } catch {}
+  }
+
   const url = `/epub-files/${sessionId}.epub`
 
   return (
-    <EpubReader
+    <ClientReader
       url={url}
-      title={meta.title}
-      author={meta.author}
-      progressKey={meta.progressKey}
-      onClose={() => router.back()}
+      title={title}
+      author={author}
+      progressKey={progressKey}
     />
   )
 }

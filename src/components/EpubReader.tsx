@@ -93,9 +93,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     return url
   }, [url])
 
-  // Debug: Log the URL being used
-  console.log('EpubReader original URL:', url)
-  console.log('EpubReader absolute URL:', absoluteUrl)
+  // Debug: Log the URL being used (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('EpubReader original URL:', url)
+    console.log('EpubReader absolute URL:', absoluteUrl)
+  }
 
   // Stable storage key for progress
   const progressStorageKey = React.useMemo(() => {
@@ -106,16 +108,22 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
   const locationChanged = useCallback((epubcfi: string) => {
     try {
-      console.log('Location changed to:', epubcfi)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Location changed to:', epubcfi)
+      }
       setLocation(epubcfi)
       localStorage.setItem(progressStorageKey, epubcfi)
     } catch (error) {
-      console.error('Error handling location change:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error handling location change:', error)
+      }
     }
   }, [progressStorageKey])
 
   const tocChanged = useCallback((toc: NavItem[]) => {
-    console.log('TOC received:', toc)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('TOC received:', toc)
+    }
     setToc(toc)
   }, [])
 
@@ -170,10 +178,14 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   }, [controlsVisible, showToc, scheduleAutoHide])
 
   const getRendition = useCallback((rendition: RenditionWithBook) => {
-    console.log('Rendition received:', rendition)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Rendition received:', rendition)
+    }
     
     if (!rendition) {
-      console.error('Rendition is null or undefined')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Rendition is null or undefined')
+      }
       setError('Failed to initialize book reader')
       setIsLoading(false)
       return
@@ -185,19 +197,25 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     
     // Add error handling for the book
     rendition.on('rendered', () => {
-      console.log('✅ Book content rendered successfully')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Book content rendered successfully')
+      }
       // Check if content is actually visible
       const iframe = document.querySelector('iframe[title="epub-reader"]')
       if (iframe) {
-        console.log('📚 EPUB iframe found:', iframe)
-        console.log('📚 EPUB iframe dimensions:', {
-          width: (iframe as HTMLElement).offsetWidth,
-          height: (iframe as HTMLElement).offsetHeight,
-          display: getComputedStyle(iframe).display,
-          visibility: getComputedStyle(iframe).visibility
-        })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📚 EPUB iframe found:', iframe)
+          console.log('📚 EPUB iframe dimensions:', {
+            width: (iframe as HTMLElement).offsetWidth,
+            height: (iframe as HTMLElement).offsetHeight,
+            display: getComputedStyle(iframe).display,
+            visibility: getComputedStyle(iframe).visibility
+          })
+        }
       } else {
-        console.warn('⚠️ EPUB iframe not found in DOM')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ EPUB iframe not found in DOM')
+        }
       }
 
       // Attach selection monitoring and enforce touch/selection styles inside iframe(s)
@@ -229,17 +247,23 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           doc.addEventListener('selectionchange', onSelectionChange)
         })
       } catch (e) {
-        console.warn('Unable to attach selection listeners to EPUB contents:', e)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Unable to attach selection listeners to EPUB contents:', e)
+        }
       }
     })
     
     rendition.on('loadError', (error: unknown) => {
-      console.error('❌ Book load error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Book load error:', error)
+      }
       setError('Failed to load book content. Please try again.')
     })
     
     rendition.on('relocated', (location: EpubLocation) => {
-      console.log('📍 Book relocated to:', location)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📍 Book relocated to:', location)
+      }
       // Release navigation lock and process queued actions
       setIsNavigating(false)
       setIsTransitioning(false)
@@ -259,8 +283,10 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           book: Math.round(bookProgress * 100),
           timeLeft: minutesLeft,
         })
-      } catch (e) {
-        console.warn('Failed to compute reading progress:', e)
+        } catch (e) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to compute reading progress:', e)
+          }
       }
 
       setNavigationQueue((queue) => {
@@ -281,10 +307,14 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     // Force resize to ensure proper display
     setTimeout(() => {
       if (rendition.resize && containerRef.current) {
-        console.log('🔄 Forcing rendition resize')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Forcing rendition resize')
+        }
         const width = containerRef.current.offsetWidth
         const height = containerRef.current.offsetHeight
-        console.log('📏 Container dimensions from ref:', { width, height })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📏 Container dimensions from ref:', { width, height })
+        }
         
         if (width > 0 && height > 0) {
           rendition.resize(width, height)
@@ -329,7 +359,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       rendition.themes.fontSize(`${nextFontPct}%`)
       rendition.themes.select(nextTheme)
     } catch (error) {
-      console.error('Error setting themes:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error setting themes:', error)
+      }
     }
 
     // Prepare EPUB locations for consistent pagination and progress calculation
@@ -351,12 +383,16 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             rendition.emit?.('relocated', loc)
           }
         } catch (e) {
-          console.warn('Failed to generate EPUB locations:', e)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to generate EPUB locations:', e)
+          }
         }
       }
       initLocations()
     } catch (e) {
-      console.warn('Error during locations initialization:', e)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Error during locations initialization:', e)
+      }
     }
   }, [])
 
@@ -403,7 +439,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         const anyRendition = renditionRef.current
         anyRendition?.destroy?.()
       } catch (e) {
-        console.warn('Error during rendition cleanup:', e)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Error during rendition cleanup:', e)
+        }
       }
     }
   }, [])
@@ -412,7 +450,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const navigate = useCallback((direction: 'next' | 'prev') => {
     const rendition = renditionRef.current
     if (!rendition) {
-      console.warn('No rendition available for navigation')
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('No rendition available for navigation')
+      }
       return
     }
 
@@ -443,7 +483,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         rendition.prev?.()
       }
     } catch (error) {
-      console.error('Navigation error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Navigation error:', error)
+      }
       setIsNavigating(false)
       setIsTransitioning(false)
       setTransitionDirection(null)
@@ -454,16 +496,22 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   const goToPreviousPage = useCallback(() => navigate('prev'), [navigate])
 
   const goToChapter = useCallback((href: string) => {
-    console.log('Chapter clicked:', href, 'rendition:', renditionRef.current)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Chapter clicked:', href, 'rendition:', renditionRef.current)
+    }
     if (renditionRef.current && renditionRef.current.display) {
       try {
         renditionRef.current.display(href)
         setShowToc(false)
       } catch (error) {
-        console.error('Error navigating to chapter:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error navigating to chapter:', error)
+        }
       }
     } else {
-      console.warn('No rendition available for chapter navigation')
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('No rendition available for chapter navigation')
+      }
     }
   }, [])
 
@@ -502,7 +550,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   React.useEffect(() => {
     const timeout = setTimeout(() => {
       if (isLoading && !error) {
-        console.warn('Book loading timeout - taking too long to load')
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Book loading timeout - taking too long to load')
+          }
         setError('Book is taking too long to load. Please check your connection and try again.')
         setIsLoading(false)
       }
@@ -518,7 +568,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         setTimeout(() => {
           const width = containerRef.current!.offsetWidth
           const height = containerRef.current!.offsetHeight
-          console.log('🪟 Window resized, updating EPUB dimensions:', { width, height })
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🪟 Window resized, updating EPUB dimensions:', { width, height })
+          }
           
           if (width > 0 && height > 0) {
             renditionRef.current!.resize(width, height)
@@ -535,7 +587,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   // Keyboard navigation with debugging
   React.useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      console.log('Key pressed:', e.key)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Key pressed:', e.key)
+      }
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
         goToPreviousPage()
@@ -675,7 +729,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             variant="outline" 
             size="sm"
             onClick={() => {
+            if (process.env.NODE_ENV === 'development') {
               console.log('TOC button clicked, current TOC:', toc)
+            }
               setShowToc(!showToc)
             }}
             disabled={toc.length === 0}
@@ -1010,7 +1066,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    console.log('Chapter button clicked:', chapter)
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('Chapter button clicked:', chapter)
+                    }
                     goToChapter(chapter.href)
                   }}
                 >
