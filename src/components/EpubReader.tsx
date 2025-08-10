@@ -964,26 +964,30 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         </div>
       )}
 
-      {/* Reading progress bar + scrubber (show briefly with controls) */}
       {!error && controlsVisible && (
         <div
           className="absolute left-0 right-0 bottom-0 z-40 px-4 pb-3"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
         >
-          <div className="mx-auto max-w-3xl">
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0"
+            style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 88px)' }}
+          >
+            <div className="w-full h-full bg-gradient-to-t from-black/40 via-black/20 to-transparent backdrop-blur-[2px]" />
+          </div>
+          <div className="mx-auto max-w-3xl relative z-10">
+            <div className="relative h-8 select-none">
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-muted" />
               <div
-                className="h-full bg-primary transition-[width] duration-200 ease-out"
+                className="absolute left-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-primary transition-[width] duration-200 ease-out"
                 style={{ width: `${Math.max(0, Math.min(100, progress.book))}%` }}
               />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-              <div>Chapter: {progress.chapter}%</div>
-              <div>Book: {progress.book}%</div>
-              <div>~{progress.timeLeft} min left</div>
-            </div>
-            {totalLocations > 0 && (
-              <div className="mt-2">
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-white ring-2 ring-primary shadow"
+                style={{ left: `${Math.max(0, Math.min(100, progress.book))}%` }}
+                aria-hidden="true"
+              />
+              {totalLocations > 0 && (
                 <input
                   type="range"
                   min={0}
@@ -1004,11 +1008,18 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                       console.warn('Failed to scrub to percentage:', err)
                     }
                   }}
-                  className="w-full"
                   aria-label="Scrub reading position"
+                  className="absolute inset-0 w-full h-8 opacity-0 cursor-pointer"
                 />
-              </div>
-            )}
+              )}
+            </div>
+            <div className="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground">
+              <div>Chapter: {Math.max(0, Math.min(100, Math.round(progress.chapter)))}%</div>
+              <span>•</span>
+              <div>Book: {Math.max(0, Math.min(100, Math.round(progress.book)))}%</div>
+              <span>•</span>
+              <div>~{progress.timeLeft} min left</div>
+            </div>
           </div>
         </div>
       )}
