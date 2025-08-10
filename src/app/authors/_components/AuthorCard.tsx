@@ -31,14 +31,14 @@ export function AuthorCard({ name, portrait, meta, topTitles = [] }: AuthorCardP
         <img
           src={portrait}
           alt={name}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 origin-top group-hover:scale-105"
+          className="absolute inset-0 w-[80%] md:w-full h-full ml-auto object-cover transition-transform duration-500 origin-top group-hover:scale-105"
           loading="lazy"
         />
 
-        {/* Always-visible vertical name bar (left) */}
-        <div className="absolute inset-y-0 left-0 w-12 md:w-14 z-20 bg-black/60 backdrop-blur-sm">
+        {/* Vertical name bar (left): always visible on mobile, show on hover for md+ */}
+        <div className="absolute inset-y-0 left-0 w-12 md:w-14 z-20 bg-black/60 backdrop-blur-sm transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100">
           <div className="h-full w-full flex items-center justify-center px-1">
-            <span className="text-white font-semibold text-sm md:text-base tracking-wide [writing-mode:vertical-rl] [text-orientation:upright] drop-shadow">
+            <span className="text-white font-semibold p-2 text-base uppercase tracking-wide [writing-mode:vertical-rl] [text-orientation:upright] drop-shadow">
               {name}
             </span>
           </div>

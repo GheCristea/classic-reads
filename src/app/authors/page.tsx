@@ -57,7 +57,7 @@ async function PopularAuthorsGrid() {
   )
 
   return (
-    <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid md:grid-cols-2 gap-4">
       {portraits.filter(p => p.portrait).map(({ name, portrait, meta, topTitles }) => (
         <AuthorCard key={name} name={name} portrait={portrait!} meta={meta} topTitles={topTitles} />
       ))}
