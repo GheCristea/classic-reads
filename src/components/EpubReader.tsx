@@ -5,7 +5,6 @@ import { baseReaderStyles } from '@/components/epub-reader/styles'
 import type {
   EpubContentsLike,
   EpubLocation,
-  EpubLocationsApi,
   ExtendedStyle,
   RenditionWithBook
 } from '@/components/epub-reader/types'
@@ -203,13 +202,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
       // Attach selection monitoring and enforce touch/selection styles inside iframe(s)
       try {
-        const unsafeContents = (rendition as unknown as { getContents?: () => unknown }).getContents?.()
-        const contentsList: EpubContentsLike[] = Array.isArray(unsafeContents)
-          ? (unsafeContents as EpubContentsLike[])
+        const unsafeContents = rendition.getContents?.() as unknown as EpubContentsLike[]
+        const contentsList = Array.isArray(unsafeContents)
+          ? (unsafeContents )
           : unsafeContents
-            ? [unsafeContents as EpubContentsLike]
+            ? [unsafeContents]
             : []
-        contentsList.forEach((contents: EpubContentsLike) => {
+        contentsList.forEach((contents) => {
           const doc: Document | undefined = contents?.document
           if (!doc) return
           // Ensure consistent touch behavior
@@ -335,7 +334,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
     // Prepare EPUB locations for consistent pagination and progress calculation
     try {
-      const anyRendition = rendition as unknown as RenditionWithBook
+      const anyRendition = rendition
       const book = anyRendition?.book
       const initLocations = async () => {
         try {
@@ -343,13 +342,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           // Ensure book is ready, then generate locations
           await (book.ready || Promise.resolve())
           if (!book.locations || !book.locations.generate) return
-          await (book.locations as EpubLocationsApi).generate?.(1600) // ~600 chars per page
+          await (book.locations).generate?.(1600) // ~600 chars per page
           const total = book.locations.total || 0
           setTotalLocations(total)
           // If we already have a current location, trigger a progress computation
-          const loc = (rendition as unknown as RenditionWithBook).currentLocation?.()
+          const loc = rendition.currentLocation?.()
           if (loc) {
-            ;(rendition as unknown as RenditionWithBook).emit?.('relocated', loc)
+            rendition.emit?.('relocated', loc)
           }
         } catch (e) {
           console.warn('Failed to generate EPUB locations:', e)
@@ -401,7 +400,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   React.useEffect(() => {
     return () => {
       try {
-        const anyRendition = renditionRef.current as unknown as { destroy?: () => void }
+        const anyRendition = renditionRef.current
         anyRendition?.destroy?.()
       } catch (e) {
         console.warn('Error during rendition cleanup:', e)
@@ -473,11 +472,11 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     selectionModeRef.current = selectionMode
     try {
       // When selection mode toggles, update current contents user-select
-      const unsafeContents = (renditionRef.current as unknown as { getContents?: () => unknown })?.getContents?.()
-      const contentsList: EpubContentsLike[] = Array.isArray(unsafeContents)
-        ? (unsafeContents as EpubContentsLike[])
+      const unsafeContents = renditionRef.current?.getContents?.() as unknown as EpubContentsLike[]
+      const contentsList = Array.isArray(unsafeContents)
+        ? (unsafeContents )
         : unsafeContents
-          ? [unsafeContents as EpubContentsLike]
+          ? [unsafeContents]
           : []
       contentsList.forEach((contents: EpubContentsLike) => {
         const doc = contents.document
@@ -563,15 +562,13 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   })
 
   // Merge our container ref with swipeable's ref
-  const { ref: swipeRef, ...swipeProps } = swipeHandlers as unknown as {
-    ref?: (node: HTMLElement | null) => void
-  }
+  const { ref: swipeRef, ...swipeProps } = swipeHandlers;
   const setMergedRef = (node: HTMLDivElement | null) => {
     // Assign to our ref
-    ;(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+    ;(containerRef).current = node
     // Forward to swipe ref if present
     try {
-      if (typeof swipeRef === 'function') swipeRef(node as unknown as HTMLElement | null)
+      if (typeof swipeRef === 'function') swipeRef(node)
     } catch {}
   }
 
@@ -811,7 +808,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           onPointerDown={(e) => {
             // Avoid clicks inside the overlay area from closing it
             const topOverlayHeight = 96 // approx overlay height including safe area
-            const clientY = (e as unknown as { clientY?: number }).clientY ?? 0
+            const clientY = (e).clientY ?? 0
             if (clientY <= topOverlayHeight) return
             if (!controlsVisible) {
               setControlsVisible(true)
@@ -941,7 +938,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
                       const r = renditionRef.current
                       const book = r?.book
                       const cfi = book?.locations?.cfiFromPercentage?.(pct)
-                      const displayFn = renditionRef.current && (renditionRef.current.display as ((cfi: string | number) => void) | undefined)
+                      const displayFn = renditionRef.current && renditionRef.current.display
                       if (cfi && displayFn) {
                         displayFn(cfi)
                       }
