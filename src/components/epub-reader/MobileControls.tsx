@@ -50,7 +50,7 @@ export function MobileControls(props: MobileControlsProps) {
     clearHideTimer()
     hideTimerRef.current = setTimeout(() => {
       setIsFabVisible(false)
-    }, 3000)
+    }, 2500)
   }, [])
 
   const registerActivity = React.useCallback(() => {
@@ -74,15 +74,13 @@ export function MobileControls(props: MobileControlsProps) {
   React.useEffect(() => {
     // Global activity listeners to reshow FAB
     const handler = () => registerActivity()
+    document.addEventListener('pointerdown', handler, { passive: true })
     document.addEventListener('touchstart', handler, { passive: true })
-    document.addEventListener('mousemove', handler)
     document.addEventListener('keydown', handler)
-    document.addEventListener('scroll', handler, { passive: true })
     return () => {
+      document.removeEventListener('pointerdown', handler)
       document.removeEventListener('touchstart', handler)
-      document.removeEventListener('mousemove', handler)
       document.removeEventListener('keydown', handler)
-      document.removeEventListener('scroll', handler)
     }
   }, [registerActivity])
 
@@ -123,8 +121,8 @@ export function MobileControls(props: MobileControlsProps) {
             minWidth: 44,
             minHeight: 44,
             opacity: isFabVisible ? 1 : 0,
-            transform: `translateY(${isFabVisible ? 0 : 12}px)`,
-            transition: 'opacity 200ms ease, transform 200ms ease',
+            transform: `translateY(${isFabVisible ? 0 : 10}px) scale(${isFabVisible ? 1 : 0.98})`,
+            transition: 'opacity 250ms ease, transform 250ms ease',
             pointerEvents: isFabVisible ? 'auto' : 'none',
           }}
         >
