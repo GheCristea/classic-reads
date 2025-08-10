@@ -1,8 +1,8 @@
 "use client"
 
-import { EpubReader } from '@/components/EpubReader'
 import { Button } from '@/components/ui/button'
 import { Play } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
 interface EpubReaderWrapperProps {
@@ -92,7 +92,7 @@ export function EpubReaderWrapper({ epubUrl, title, author }: EpubReaderWrapperP
 
       {/* EPUB Reader Modal */}
       {isReaderOpen && sessionUrl && (
-        <EpubReader
+        <DynamicEpubReader
           url={sessionUrl}
           title={title}
           author={author}
@@ -103,3 +103,8 @@ export function EpubReaderWrapper({ epubUrl, title, author }: EpubReaderWrapperP
     </>
   )
 } 
+
+// Lazy-load heavy reader only when needed
+const DynamicEpubReader = dynamic(() => import('@/components/EpubReader').then(m => m.EpubReader), {
+  ssr: false,
+})

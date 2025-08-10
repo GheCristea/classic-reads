@@ -9,6 +9,9 @@ import { notFound } from "next/navigation"
 import { BookCard } from "../_components/BookCard"
 import { EpubReaderWrapper } from "../_components/EpubReaderWrapper"
 
+// Cache each book page with ISR
+export const revalidate = 3600
+
 interface BookDetailPageProps {
   params: Promise<{
     id: string
