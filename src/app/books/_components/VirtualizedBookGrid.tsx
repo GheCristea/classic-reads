@@ -10,6 +10,7 @@ interface VirtualizedBookGridProps {
   columnCount?: number
   rowHeight?: number
   gap?: number
+  showFullDetails?: boolean
 }
 
 // Responsive virtualized grid using window scroll
@@ -18,6 +19,7 @@ export function VirtualizedBookGrid({
   columnCount = 3,
   rowHeight = 320,
   gap = 24,
+  showFullDetails = false,
 }: VirtualizedBookGridProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -75,7 +77,7 @@ export function VirtualizedBookGrid({
                 style={{ rowGap: gap, marginBottom: 0 }}
               >
                 {slice.map((book) => (
-                  <BookCard key={book.id} book={book} />
+                  <BookCard key={book.id} book={book} showFullDetails={showFullDetails} />
                 ))}
                 {/* Fillers to keep grid width consistent when last row not full */}
                 {slice.length < cols && Array.from({ length: cols - slice.length }).map((_, i) => (

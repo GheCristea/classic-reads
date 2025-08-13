@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getSuggestedSearchTerms, searchBooks } from "@/lib/gutendx"
+import dynamic from "next/dynamic"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { ApiErrorCard } from "../books/_components/ApiErrorCard"
-import { BookCard } from "../books/_components/BookCard"
 import { SearchBar } from "./_components/SearchBar"
 
 interface SearchPageProps {
@@ -56,11 +56,7 @@ async function SearchResults({ searchParams }: SearchResultsProps) {
         </div>
 
         {booksResponse.results.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {booksResponse.results.map((book) => (
-              <BookCard key={book.id} book={book} showFullDetails />
-            ))}
-          </div>
+          <VirtualGrid books={booksResponse.results} showFullDetails />
         ) : (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold mb-2">No books found</h3>
@@ -83,6 +79,9 @@ async function SearchResults({ searchParams }: SearchResultsProps) {
     )
   }
 }
+
+// Lazy-load the client-only virtual grid
+const VirtualGrid = dynamic(() => import('../books/_components/VirtualizedBookGrid').then(m => m.default), { ssr: false })
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const resolved = await searchParams
