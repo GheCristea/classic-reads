@@ -33,6 +33,7 @@ export function BookCard({ book, showFullDetails = false }: BookCardProps) {
           <CardTitle className="text-lg leading-tight line-clamp-2">
             <Link 
               href={`/books/${book.id}`}
+              prefetch={false}
               className="hover:text-primary transition-colors"
             >
               {book.title}
@@ -109,7 +110,7 @@ export function BookCard({ book, showFullDetails = false }: BookCardProps) {
             />
           )}
           <Button asChild size="sm" variant="outline" className={epubFormat ? "flex-1" : "flex-1"}>
-            <Link href={`/books/${book.id}`}>
+            <Link href={`/books/${book.id}`} prefetch={false}>
               View
             </Link>
           </Button>
