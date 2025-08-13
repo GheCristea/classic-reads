@@ -1,11 +1,11 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchBooks } from "@/lib/gutendx"
 import { Wifi } from "lucide-react"
-import dynamic from "next/dynamic"
 import { Suspense } from "react"
 import { ApiErrorCard } from "./_components/ApiErrorCard"
 import { BookFilters } from "./_components/BookFilters"
 import { Pagination } from "./_components/Pagination"
+import VirtualizedBookGrid from "./_components/VirtualizedBookGrid"
 
 interface BooksPageProps {
   searchParams: Promise<{
@@ -74,7 +74,7 @@ async function BooksContent({ searchParams }: BooksPageProps) {
         {booksResponse.results.length > 0 ? (
           <>
             {/* Virtualized grid for large result sets */}
-            <VirtualGrid books={booksResponse.results} />
+            <VirtualizedBookGrid books={booksResponse.results} />
             
             {/* Pagination */}
             <Pagination 
@@ -124,5 +124,4 @@ export default function BooksPage({ searchParams }: BooksPageProps) {
   )
 } 
 
-// Lazy-load the client-only virtual grid to keep server bundle lean
-const VirtualGrid = dynamic(() => import('./_components/VirtualizedBookGrid').then(m => m.default), { ssr: false })
+// Client component is imported directly; Next will bundle-split automatically

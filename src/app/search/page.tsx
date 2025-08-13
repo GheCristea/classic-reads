@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getSuggestedSearchTerms, searchBooks } from "@/lib/gutendx"
-import dynamic from "next/dynamic"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { ApiErrorCard } from "../books/_components/ApiErrorCard"
+import VirtualizedBookGrid from "../books/_components/VirtualizedBookGrid"
 import { SearchBar } from "./_components/SearchBar"
+
+export const dynamic = "force-dynamic"
 
 interface SearchPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -56,7 +58,7 @@ async function SearchResults({ searchParams }: SearchResultsProps) {
         </div>
 
         {booksResponse.results.length > 0 ? (
-          <VirtualGrid books={booksResponse.results} showFullDetails />
+          <VirtualizedBookGrid books={booksResponse.results} showFullDetails />
         ) : (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold mb-2">No books found</h3>
@@ -80,8 +82,7 @@ async function SearchResults({ searchParams }: SearchResultsProps) {
   }
 }
 
-// Lazy-load the client-only virtual grid
-const VirtualGrid = dynamic(() => import('../books/_components/VirtualizedBookGrid').then(m => m.default), { ssr: false })
+// Client component is imported directly; Next will bundle-split automatically
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const resolved = await searchParams
