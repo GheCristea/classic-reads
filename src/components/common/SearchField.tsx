@@ -85,7 +85,7 @@ export function SearchField({
       } finally {
         setLoading(false)
       }
-    }, 250)
+    }, 300)
   }, [fetchSuggestions])
 
   // Close dropdown on outside click
