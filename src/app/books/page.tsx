@@ -1,9 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchBooks } from "@/lib/gutendx"
 import { Wifi } from "lucide-react"
+import dynamic from "next/dynamic"
 import { Suspense } from "react"
 import { ApiErrorCard } from "./_components/ApiErrorCard"
-import { BookCard } from "./_components/BookCard"
 import { BookFilters } from "./_components/BookFilters"
 import { Pagination } from "./_components/Pagination"
 
@@ -73,11 +73,8 @@ async function BooksContent({ searchParams }: BooksPageProps) {
         {/* Books grid */}
         {booksResponse.results.length > 0 ? (
           <>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {booksResponse.results.map((book) => (
-                <BookCard key={book.id} book={book} />
-              ))}
-            </div>
+            {/* Virtualized grid for large result sets */}
+            <VirtualGrid books={booksResponse.results} />
             
             {/* Pagination */}
             <Pagination 
@@ -126,3 +123,6 @@ export default function BooksPage({ searchParams }: BooksPageProps) {
     </div>
   )
 } 
+
+// Lazy-load the client-only virtual grid to keep server bundle lean
+const VirtualGrid = dynamic(() => import('./_components/VirtualizedBookGrid').then(m => m.default), { ssr: false })
