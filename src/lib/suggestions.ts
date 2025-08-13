@@ -6,10 +6,23 @@ export interface SuggestionItem {
 
 const LOCAL_SUGGEST_API = '/api/suggest'
 
-// Simple in-memory cache for suggestions
+// Simple in-memory cache for suggestions (LRU + SWR-friendly)
 type CacheEntry = { ts: number; items: SuggestionItem[] }
 const SUGGESTIONS_CACHE = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 2 * 60 * 1000 // 2 minutes
+const MAX_CACHE_ENTRIES = 100
+// Coalesce identical in-flight queries by key
+const INFLIGHT = new Map<string, Promise<SuggestionItem[]>>()
+
+function pruneCache() {
+  if (SUGGESTIONS_CACHE.size <= MAX_CACHE_ENTRIES) return
+  const entries = Array.from(SUGGESTIONS_CACHE.entries())
+  entries.sort((a, b) => a[1].ts - b[1].ts)
+  const toDelete = entries.slice(0, entries.length - MAX_CACHE_ENTRIES)
+  for (const [key] of toDelete) {
+    SUGGESTIONS_CACHE.delete(key)
+  }
+}
 // const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
 
 function sanitizeQuery(query: string): string {
@@ -78,23 +91,37 @@ export async function getSuggestions(query: string, limit = 8, signal?: AbortSig
     if (cached && now - cached.ts < CACHE_TTL_MS) {
       return cached.items
     }
+    // De-dupe concurrent identical lookups
+    const inflight = INFLIGHT.get(key)
+    if (inflight) {
+      return inflight
+    }
     // Parallel: Gutendex vs delayed Google fallback (3s)
-    const gutPromise = getGutendexSuggestions(query, limit, signal)
-    const fallbackPromise = new Promise<SuggestionItem[]>((resolve) => {
-      const timer = setTimeout(async () => {
-        if (signal?.aborted) { resolve([]); return }
-        resolve(await getGoogleBooksSuggestions(query, limit, signal))
-      }, 3000)
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          clearTimeout(timer)
-          resolve([])
-        }, { once: true })
-      }
-    })
-    const items = await Promise.race([gutPromise, fallbackPromise])
-    SUGGESTIONS_CACHE.set(key, { ts: now, items })
-    return items
+    const request = (async (): Promise<SuggestionItem[]> => {
+      const gutPromise = getGutendexSuggestions(query, limit, signal)
+      const fallbackPromise = new Promise<SuggestionItem[]>((resolve) => {
+        const timer = setTimeout(async () => {
+          if (signal?.aborted) { resolve([]); return }
+          resolve(await getGoogleBooksSuggestions(query, limit, signal))
+        }, 3000)
+        if (signal) {
+          signal.addEventListener('abort', () => {
+            clearTimeout(timer)
+            resolve([])
+          }, { once: true })
+        }
+      })
+      const items = await Promise.race([gutPromise, fallbackPromise])
+      SUGGESTIONS_CACHE.set(key, { ts: Date.now(), items })
+      pruneCache()
+      return items
+    })()
+    INFLIGHT.set(key, request)
+    try {
+      return await request
+    } finally {
+      INFLIGHT.delete(key)
+    }
   } catch {
     return []
   }
