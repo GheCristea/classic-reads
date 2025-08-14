@@ -46,18 +46,6 @@ export interface SearchParams {
 
 const GUTENDX_BASE_URL = 'https://gutendex.com';
 
-function getApiBaseUrl(): string {
-  // Browser can use relative URL
-  if (typeof window !== 'undefined') return '';
-  // Prefer explicit site URL if provided
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
-  // Vercel provides VERCEL_URL without protocol
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  // Fallback to localhost in dev
-  const port = process.env.PORT || '3000';
-  return `http://localhost:${port}`;
-}
-
 /**
  * Builds query string from search parameters
  */

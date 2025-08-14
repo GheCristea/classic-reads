@@ -6,7 +6,7 @@ type GutendexBook = {
   authors?: Array<{ name: string }>
 }
 
-type GutendexResponse = {
+export type GutendexResponse = {
   results?: GutendexBook[]
 }
 
