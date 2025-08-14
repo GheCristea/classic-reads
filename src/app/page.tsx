@@ -4,6 +4,7 @@ import { getSuggestedSearchTerms } from "@/lib/gutendx"
 import { ArrowRight, BookOpen, Download, Globe, Star } from "lucide-react"
 import Link from "next/link"
 import { PopularBooksSection } from "./_components/PopularBooksSection"
+import { RecentBooksSection } from "./_components/RecentBooksSection"
 
 export default async function Home() {
   const searchTerms = getSuggestedSearchTerms()
@@ -39,6 +40,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Recent Books Section */}
+      <RecentBooksSection />
 
       {/* Features Section */}
       <section className="py-16 px-4">

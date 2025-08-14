@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Book, fetchBookById, fetchBooks, formatAuthors, getBookFormats, getEpubFormat, normalizeLanguageCode } from "@/lib/gutendx"
+import { Book, fetchBookById, fetchBooks, formatAuthors, getBookCoverUrl, getBookFormats, getEpubFormat, normalizeLanguageCode } from "@/lib/gutendx"
 import { truncateText } from "@/lib/utils"
 import { Book as BookIcon, Download, ExternalLink, User } from "lucide-react"
 import Link from "next/link"
@@ -9,6 +9,7 @@ import { notFound } from "next/navigation"
 import { BackButton } from "../_components/BackButton"
 import { BookCard } from "../_components/BookCard"
 import { EpubReaderWrapper } from "../_components/EpubReaderWrapper"
+import { RecentlyViewedTracker } from "../_components/RecentlyViewedTracker"
 
 
 interface BookDetailPageProps {
@@ -45,6 +46,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     const formats = getBookFormats(book)
     const authorText = formatAuthors(book.authors)
     const language = normalizeLanguageCode(book.languages[0] || "en")
+    const coverUrl = getBookCoverUrl(book)
     
     // Get EPUB format for online reading
     const epubFormat = getEpubFormat(book)
@@ -59,6 +61,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Tracker for recently viewed (client-side only) */}
+          <RecentlyViewedTracker
+            book={{ id: book.id, title: book.title, author: authorText, coverUrl }}
+          />
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Book Header */}
