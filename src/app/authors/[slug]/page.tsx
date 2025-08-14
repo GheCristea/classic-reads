@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getBooksByAuthor } from "@/lib/gutendx"
 import { Suspense } from "react"
 
+export const dynamic = "force-dynamic"
+
 interface AuthorPageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ page?: string }>
