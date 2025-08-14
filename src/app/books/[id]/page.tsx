@@ -9,7 +9,6 @@ import { notFound } from "next/navigation"
 import { BookCard } from "../_components/BookCard"
 import { EpubReaderWrapper } from "../_components/EpubReaderWrapper"
 
-export const dynamic = "force-dynamic"
 
 interface BookDetailPageProps {
   params: Promise<{

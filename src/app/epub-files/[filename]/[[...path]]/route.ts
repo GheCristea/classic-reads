@@ -1,8 +1,6 @@
 import JSZip from 'jszip'
 import { NextRequest } from 'next/server'
 
-export const dynamic = "force-dynamic"
-
 interface EpubSession {
   epubUrl: string
   timestamp: number
