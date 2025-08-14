@@ -9,17 +9,6 @@ import { Filter, Search, X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
-const languages = [
-  { code: "en", name: "English" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "es", name: "Spanish" },
-  { code: "it", name: "Italian" },
-  { code: "pt", name: "Portuguese" },
-  { code: "ru", name: "Russian" },
-  { code: "zh", name: "Chinese" },
-]
-
 const sortOptions = [
   { value: "popular", label: "Most Popular" },
   { value: "ascending", label: "Title A-Z" },
@@ -48,18 +37,7 @@ export function BookFilters() {
     router.push(`/books?${params.toString()}`)
   }
 
-  const toggleLanguage = (langCode: string) => {
-    const currentLanguages = searchParams.get("languages")?.split(",") || []
-    let newLanguages: string[]
-    
-    if (currentLanguages.includes(langCode)) {
-      newLanguages = currentLanguages.filter(lang => lang !== langCode)
-    } else {
-      newLanguages = [...currentLanguages, langCode]
-    }
-    
-    updateFilters("languages", newLanguages.length > 0 ? newLanguages.join(",") : null)
-  }
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,14 +51,13 @@ export function BookFilters() {
 
   const activeFilters = {
     search: searchParams.get("search"),
-    languages: searchParams.get("languages")?.split(",") || [],
     copyright: searchParams.get("copyright"),
     sort: searchParams.get("sort"),
     topic: searchParams.get("topic"),
   }
 
   const hasActiveFilters = Object.values(activeFilters).some(value => 
-    Array.isArray(value) ? value.length > 0 : value
+    value !== null && value !== ""
   )
 
   return (
@@ -138,15 +115,7 @@ export function BookFilters() {
                   />
                 </Badge>
               )}
-              {activeFilters.languages.map(lang => (
-                <Badge key={lang} variant="secondary" className="flex items-center gap-1">
-                  {languages.find(l => l.code === lang)?.name || lang}
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
-                    onClick={() => toggleLanguage(lang)}
-                  />
-                </Badge>
-              ))}
+
               {activeFilters.topic && (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   Topic: {activeFilters.topic}
@@ -182,26 +151,7 @@ export function BookFilters() {
         </CardContent>
       </Card>
 
-      {/* Languages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Languages</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {languages.map((language) => (
-              <Button
-                key={language.code}
-                variant={activeFilters.languages.includes(language.code) ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => toggleLanguage(language.code)}
-              >
-                {language.name}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Subjects */}
       <Card>

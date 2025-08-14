@@ -1,3 +1,4 @@
+import { LanguageSync } from "@/components/LanguageSync";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import type { Metadata, Viewport } from "next";
@@ -44,6 +45,7 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
+        <LanguageSync />
         <Header />
         <main className="flex-1">
           {children}
