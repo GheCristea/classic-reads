@@ -91,3 +91,12 @@ export function addLanguageToUrl(url: string): string {
   urlObj.searchParams.set("lang", currentLang)
   return urlObj.toString()
 }
+
+// Server-safe version that doesn't depend on window
+export function addLanguageToUrlServer(url: string, currentLang: string): string {
+  if (currentLang === "en") return url
+  
+  const urlObj = new URL(url, "http://localhost") // Dummy origin for server
+  urlObj.searchParams.set("lang", currentLang)
+  return urlObj.toString()
+}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Book, fetchBooks } from "@/lib/gutendx"
-import { addLanguageToUrl, getLanguageInfo, useCurrentLanguage } from "@/lib/language"
+import { getLanguageInfo, useCurrentLanguage } from "@/lib/language"
 import { ArrowRight, Star } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -138,7 +138,7 @@ export function PopularBooksSection() {
             </CardTitle>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link href={addLanguageToUrl("/books")}>
+            <Link href={currentLanguage === "en" ? "/books" : `/books?lang=${currentLanguage}`}>
               View All <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -165,7 +165,9 @@ export function PopularBooksSection() {
           <div className="text-center py-8 text-muted-foreground">
             <p>No popular books available in the selected language.</p>
             <Button asChild variant="outline" className="mt-4">
-              <Link href={addLanguageToUrl("/books")}>Browse All Books</Link>
+              <Link href={currentLanguage === "en" ? "/books" : `/books?lang=${currentLanguage}`}>
+                Browse All Books
+              </Link>
             </Button>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { SearchField } from "@/components/common/SearchField"
 import { Button } from "@/components/ui/button"
-import { addLanguageToUrl } from "@/lib/language"
+import { useCurrentLanguage } from "@/lib/language"
 import { BookOpen, Menu, X } from "lucide-react"
 import Link from "next/link"
 import React from "react"
@@ -10,6 +10,7 @@ import { LanguageSelector } from "./LanguageSelector"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
+  const currentLanguage = useCurrentLanguage()
   const primaryNavigationItems: Array<{ href: string; label: string }> = [
     { href: "/books", label: "Browse Books" },
     { href: "/authors", label: "Authors" },
@@ -31,7 +32,11 @@ export function Header() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-full overflow-x-hidden flex h-16 items-center justify-between px-4">
           {/* Logo */}
-          <Link href={addLanguageToUrl("/")} className="flex items-center space-x-2" onClick={closeMenu}>
+          <Link 
+            href={currentLanguage === "en" ? "/" : `/?lang=${currentLanguage}`} 
+            className="flex items-center space-x-2" 
+            onClick={closeMenu}
+          >
             <BookOpen className="h-6 w-6 text-primary" />
             <span className="font-bold text-lg">Classic Reads</span>
           </Link>
@@ -41,7 +46,7 @@ export function Header() {
             {primaryNavigationItems.map((item) => (
               <Link
                 key={item.href}
-                href={addLanguageToUrl(item.href)}
+                href={currentLanguage === "en" ? item.href : `${item.href}?lang=${currentLanguage}`}
                 className="text-sm font-medium transition-colors hover:text-primary"
               >
                 {item.label}
@@ -91,7 +96,7 @@ export function Header() {
               {primaryNavigationItems.map((item) => (
                 <Link
                   key={item.href}
-                  href={addLanguageToUrl(item.href)}
+                  href={currentLanguage === "en" ? item.href : `${item.href}?lang=${currentLanguage}`}
                   className="py-3 px-2 rounded-md text-base font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
                   onClick={closeMenu}
                 >
