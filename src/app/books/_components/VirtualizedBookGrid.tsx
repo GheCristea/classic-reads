@@ -79,11 +79,11 @@ export function VirtualizedBookGrid({
     <div ref={containerRef} className="relative w-full">
       {/* Hidden measurer to tune row height */}
       {books.length > 0 && (
-        <div className="absolute invisible pointer-events-none" style={{ left: -9999, top: 0 }}>
-        <div ref={measureRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ rowGap: gap }}>
-          <BookCard book={books[0]} showFullDetails={showFullDetails} />
+        <div className="absolute invisible pointer-events-none" style={{ left: '-9999px', top: '0px' }}>
+          <div ref={measureRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ rowGap: gap }}>
+            <BookCard book={books[0]} showFullDetails={showFullDetails} />
+          </div>
         </div>
-      </div>
       )}
       <div
         style={{
