@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Book, fetchBookById, fetchBooks, formatAuthors, getBookFormats, getEpubFormat, normalizeLanguageCode } from "@/lib/gutendx"
 import { truncateText } from "@/lib/utils"
-import { ArrowLeft, Book as BookIcon, Download, ExternalLink, User } from "lucide-react"
+import { Book as BookIcon, Download, ExternalLink, User } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { BackButton } from "../_components/BackButton"
 import { BookCard } from "../_components/BookCard"
 import { EpubReaderWrapper } from "../_components/EpubReaderWrapper"
 
@@ -52,12 +53,9 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       <div className="container mx-auto px-4 py-8">
         {/* Back button */}
         <div className="mb-6">
-          <Button asChild variant="ghost" className="mb-4">
-            <Link href="/books">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Books
-            </Link>
-          </Button>
+          <div className="mb-4">
+            <BackButton />
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
