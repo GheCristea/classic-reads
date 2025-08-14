@@ -82,11 +82,15 @@ function buildQueryString(params: SearchParams): string {
  */
 export async function fetchBooks(params: SearchParams = {}): Promise<BooksResponse> {
   const queryString = buildQueryString(params);
-  // Proxy through our cached API route (absolute URL on server)
-  const url = `${getApiBaseUrl()}/api/gx/search${queryString ? `?${queryString}` : ''}`;
+  // On server (build/SSR), fetch Gutendex directly with revalidation to enable static generation.
+  // On client, go through our cached API route for SWR + Supabase persistence.
+  const isBrowser = typeof window !== 'undefined'
+  const url = isBrowser
+    ? `/api/gx/search${queryString ? `?${queryString}` : ''}`
+    : `${GUTENDX_BASE_URL}/books${queryString ? `?${queryString}` : ''}`;
 
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, isBrowser ? { cache: 'no-store' } : { next: { revalidate: 3600 } });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

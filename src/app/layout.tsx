@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,8 +46,12 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <LanguageSync />
-        <Header />
+        <Suspense fallback={null}>
+          <LanguageSync />
+        </Suspense>
+        <Suspense fallback={null}>
+          <Header />
+        </Suspense>
         <main className="flex-1">
           {children}
         </main>
