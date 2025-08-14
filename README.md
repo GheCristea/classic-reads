@@ -77,6 +77,15 @@ A modern, responsive web application for browsing and discovering classic litera
 4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+### Environment Variables
+
+Create a `.env.local` file with:
+
+```bash
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
 ### Build for Production
 
 ```bash
@@ -115,12 +124,37 @@ The app integrates with the [Gutendx API](https://gutendex.com), which provides 
 - **No authentication required**
 - **Rate limiting:** Respectful usage (10 requests/minute recommended)
 - **Data format:** JSON responses
-- **Caching:** 5-minute cache for book listings, 1-hour for individual books
+- **Caching:** 30-day persistent cache via Supabase for search/suggestions; SWR headers for CDN
 
 ### Key Endpoints Used
 
 - `/books` - List books with filters and pagination
 - `/books/{id}` - Get specific book details
+ - App routes: `/api/gx/search` (cached proxy), `/api/gx/suggest` (cached suggestions)
+
+### Supabase Cache Tables
+
+Run these SQL statements in Supabase SQL editor:
+
+```sql
+create table if not exists public.books_cache (
+  cache_key text primary key,
+  value jsonb not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists books_cache_expires_idx on public.books_cache (expires_at);
+
+create table if not exists public.suggest_cache (
+  cache_key text primary key,
+  value jsonb not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists suggest_cache_expires_idx on public.suggest_cache (expires_at);
+```
 
 ## 🎯 Key Features Implementation
 

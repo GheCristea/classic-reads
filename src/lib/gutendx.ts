@@ -46,6 +46,18 @@ export interface SearchParams {
 
 const GUTENDX_BASE_URL = 'https://gutendex.com';
 
+function getApiBaseUrl(): string {
+  // Browser can use relative URL
+  if (typeof window !== 'undefined') return '';
+  // Prefer explicit site URL if provided
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  // Vercel provides VERCEL_URL without protocol
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // Fallback to localhost in dev
+  const port = process.env.PORT || '3000';
+  return `http://localhost:${port}`;
+}
+
 /**
  * Builds query string from search parameters
  */
@@ -70,13 +82,11 @@ function buildQueryString(params: SearchParams): string {
  */
 export async function fetchBooks(params: SearchParams = {}): Promise<BooksResponse> {
   const queryString = buildQueryString(params);
-  const url = `${GUTENDX_BASE_URL}/books${queryString ? `?${queryString}` : ''}`;
+  // Proxy through our cached API route (absolute URL on server)
+  const url = `${getApiBaseUrl()}/api/gx/search${queryString ? `?${queryString}` : ''}`;
 
   try {
-    const response = await fetch(url, {
-      // Cache for 5 minutes in production
-      next: { revalidate: 300 }
-    });
+    const response = await fetch(url, { cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

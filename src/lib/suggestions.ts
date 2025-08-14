@@ -4,7 +4,7 @@ export interface SuggestionItem {
   subtitle?: string
 }
 
-const LOCAL_SUGGEST_API = '/api/suggest'
+const LOCAL_SUGGEST_API = '/api/gx/suggest'
 
 // Simple in-memory cache for suggestions (LRU + SWR-friendly)
 type CacheEntry = { ts: number; items: SuggestionItem[] }
@@ -23,7 +23,7 @@ function pruneCache() {
     SUGGESTIONS_CACHE.delete(key)
   }
 }
-// const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
+// We rely solely on cached Gutendex via LOCAL_SUGGEST_API.
 
 function sanitizeQuery(query: string): string {
   return query.trim().slice(0, 100)
@@ -110,31 +110,7 @@ export async function getAuthorSuggestions(query: string, limit = 8, signal?: Ab
   return data
 }
 
-const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
-export async function getGoogleBooksSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
-  const q = sanitizeQuery(query)
-  if (!q) return []
-  const params = new URLSearchParams({
-    q,
-    printType: 'books',
-    maxResults: String(Math.min(limit, 10)),
-    fields: 'items(volumeInfo/title,volumeInfo/authors)'
-  })
-  const url = `${GOOGLE_BOOKS_API}?${params.toString()}`
-  console.log('GOOGLE_BOOKS_API', url)
-  const res = await fetch(url, { cache: 'no-store', signal })
-  if (!res.ok) return []
-  const data = await res.json() as { items?: Array<{ volumeInfo?: { title?: string; authors?: string[] } }> }
-  const items = (data.items || [])
-    .map((it, idx) => ({
-      id: String(idx),
-      title: it.volumeInfo?.title || '',
-      subtitle: (it.volumeInfo?.authors && it.volumeInfo.authors.length > 0) ? it.volumeInfo.authors.join(', ') : undefined,
-    }))
-    .filter(s => s.title)
-    .slice(0, limit)
-  return items
-}
+// Google Books fallback removed
 
 export async function getSuggestions(query: string, limit = 8, signal?: AbortSignal): Promise<SuggestionItem[]> {
   const startTime = performance.now()
@@ -151,57 +127,9 @@ export async function getSuggestions(query: string, limit = 8, signal?: AbortSig
       return cached.items
     }
 
-    // Prioritize Gutendex for 3 seconds, then allow Google fallback
-    const gutStartTime = performance.now()
-    const gutPromise = getGutendexSuggestions(query, limit, signal)
-    
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let fallbackAllowed = false
-    
-    const fallbackPromise = new Promise<SuggestionItem[]>((resolve) => {
-      timer = setTimeout(async () => {
-        if (signal?.aborted) { resolve([]); return }
-        fallbackAllowed = true
-        const fallbackStartTime = performance.now()
-        console.log(`🔄 Starting Google fallback after ${(fallbackStartTime - startTime).toFixed(1)}ms`)
-        const result = await getGoogleBooksSuggestions(query, limit, signal)
-        const fallbackTime = performance.now() - fallbackStartTime
-        console.log(`📚 Google fallback completed: ${fallbackTime.toFixed(1)}ms`)
-        resolve(result)
-      }, 3000) // Wait 3 seconds before allowing fallback
-      
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          if (timer) clearTimeout(timer)
-          resolve([])
-        }, { once: true })
-      }
-    })
-
-    // Race with priority: Gutendex wins if it resolves within 3s, otherwise Google wins
-    const items = await Promise.race([
-      gutPromise.then(result => {
-        const gutTime = performance.now() - gutStartTime
-        console.log(`✅ Gutendex suggestions: ${gutTime.toFixed(1)}ms`)
-        if (timer) {
-          clearTimeout(timer)
-          timer = null
-        }
-        // Only use Gutendex if it completed within 3 seconds
-        if (gutTime <= 3000) {
-          return result
-        } else {
-          console.log(`⏰ Gutendex too slow (${gutTime.toFixed(1)}ms), ignoring result`)
-          // Return empty to let Google fallback win
-          return []
-        }
-      }),
-      fallbackPromise
-    ])
-
+    const items = await getGutendexSuggestions(query, limit, signal)
     const totalTime = performance.now() - startTime
-    console.log(`🎯 Total suggestions time: ${totalTime.toFixed(1)}ms (${fallbackAllowed ? 'with fallback' : 'Gutendex only'})`)
-    
+    console.log(`🎯 Suggestions time: ${totalTime.toFixed(1)}ms (Gutendex cached API)`)
     SUGGESTIONS_CACHE.set(key, { ts: Date.now(), items })
     pruneCache()
     return items
