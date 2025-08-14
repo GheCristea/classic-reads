@@ -85,7 +85,7 @@ export default async function Home() {
       </section>
 
       {/* Popular Books Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section className="pb-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-full">
           <PopularBooksSection />
         </div>
