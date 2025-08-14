@@ -288,7 +288,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 </Link>
               </Button>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               {relatedBooks.map((relatedBook) => (
                 <BookCard key={relatedBook.id} book={relatedBook} />
               ))}

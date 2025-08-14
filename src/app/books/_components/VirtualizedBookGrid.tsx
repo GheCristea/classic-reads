@@ -18,7 +18,7 @@ export function VirtualizedBookGrid({
   books,
   columnCount = 3,
   rowHeight = 320,
-  gap = 24,
+  gap = 12, // Reduced from 24 to 12 for better mobile spacing
   showFullDetails = false,
 }: VirtualizedBookGridProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -80,7 +80,7 @@ export function VirtualizedBookGrid({
       {/* Hidden measurer to tune row height */}
       {books.length > 0 && (
         <div className="absolute invisible pointer-events-none" style={{ left: '-9999px', top: '0px' }}>
-          <div ref={measureRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ rowGap: gap }}>
+          <div ref={measureRef} className="grid gap-3 sm:gap-4 lg:gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ rowGap: gap }}>
             <BookCard book={books[0]} showFullDetails={showFullDetails} />
           </div>
         </div>
@@ -105,7 +105,7 @@ export function VirtualizedBookGrid({
               }}
             >
               <div
-                className="grid gap-6 sm:grid-cols-2"
+                className="grid gap-3 sm:gap-4 lg:gap-6 sm:grid-cols-2"
                 style={{ rowGap: gap, marginBottom: 0 }}
               >
                 {slice.map((book) => (
