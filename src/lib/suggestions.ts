@@ -39,48 +39,56 @@ export async function getGutendexSuggestions(query: string, limit = 8, signal?: 
   const promise = (async () => {
     const fetchStartTime = performance.now()
     const url = `${LOCAL_SUGGEST_API}?q=${encodeURIComponent(q)}&limit=${limit}`
-    
-    // Add timeout to prevent hanging requests
+
+    // Create a controller with timeout and optionally tie it to the caller's signal
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
-    
+    const onAbort = () => {
+      try { controller.abort() } catch {}
+    }
+    const timeoutId = setTimeout(onAbort, 8000) // extend to 8s to outlast server-side 6s timeout
     try {
-      const res = await fetch(url, { 
-        cache: 'no-store', 
-        signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal 
+      if (signal) {
+        if (signal.aborted) onAbort()
+        else signal.addEventListener('abort', onAbort, { once: true })
+      }
+      const res = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal,
       })
       clearTimeout(timeoutId)
+      if (signal) try { signal.removeEventListener('abort', onAbort) } catch {}
       const fetchTime = performance.now() - fetchStartTime
-    
-    if (!res.ok) {
-      console.log(`❌ Gutendex fetch failed after ${fetchTime.toFixed(1)}ms: ${res.status}`)
-      return []
-    }
-    
-    const parseStartTime = performance.now()
-    const data = await res.json() as unknown
-    const parseTime = performance.now() - parseStartTime
-    
-    // API returns SuggestionItem[] directly; support older shape too
-    if (Array.isArray(data)) {
+
+      if (!res.ok) {
+        console.log(`❌ Gutendex fetch failed after ${fetchTime.toFixed(1)}ms: ${res.status}`)
+        return []
+      }
+
+      const parseStartTime = performance.now()
+      const data = await res.json() as unknown
+      const parseTime = performance.now() - parseStartTime
+
+      // API returns SuggestionItem[] directly; support older shape too
+      if (Array.isArray(data)) {
+        const totalTime = performance.now() - fetchStartTime
+        console.log(`📖 Gutendex fetch: ${fetchTime.toFixed(1)}ms, parse: ${parseTime.toFixed(1)}ms, total: ${totalTime.toFixed(1)}ms`)
+        return (data as SuggestionItem[]).slice(0, limit)
+      }
+
+      const obj = data as { results?: Array<{ id: number; title: string; authors?: Array<{ name: string }> }> }
+      const results = Array.isArray(obj?.results) ? obj.results : []
+      const mapped = results.slice(0, limit).map((b) => ({
+        id: String(b.id),
+        title: b.title,
+        subtitle: (b.authors && b.authors.length > 0) ? b.authors.map(a => a.name).join(', ') : undefined,
+      }))
+
       const totalTime = performance.now() - fetchStartTime
       console.log(`📖 Gutendex fetch: ${fetchTime.toFixed(1)}ms, parse: ${parseTime.toFixed(1)}ms, total: ${totalTime.toFixed(1)}ms`)
-      return (data as SuggestionItem[]).slice(0, limit)
-    }
-    
-    const obj = data as { results?: Array<{ id: number; title: string; authors?: Array<{ name: string }> }> }
-    const results = Array.isArray(obj?.results) ? obj.results : []
-    const mapped = results.slice(0, limit).map((b) => ({
-      id: String(b.id),
-      title: b.title,
-      subtitle: (b.authors && b.authors.length > 0) ? b.authors.map(a => a.name).join(', ') : undefined,
-    }))
-    
-    const totalTime = performance.now() - fetchStartTime
-    console.log(`📖 Gutendex fetch: ${fetchTime.toFixed(1)}ms, parse: ${parseTime.toFixed(1)}ms, total: ${totalTime.toFixed(1)}ms`)
-    return mapped
+      return mapped
     } catch (error) {
       clearTimeout(timeoutId)
+      if (signal) try { signal.removeEventListener('abort', onAbort) } catch {}
       const errorTime = performance.now() - fetchStartTime
       if (error instanceof Error && error.name === 'AbortError') {
         console.log(`⏰ Gutendex timeout after ${errorTime.toFixed(1)}ms`)

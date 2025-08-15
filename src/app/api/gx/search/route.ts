@@ -9,12 +9,17 @@ export const runtime = 'nodejs'
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const params = Object.fromEntries(url.searchParams.entries())
-  const cacheKey = buildStableKey({ scope: 'gutendex:books', ...params })
+  // Normalize search query to lowercase for case-insensitive caching
+  if (params.search) {
+    params.search = params.search.toLowerCase().trim()
+  }
+  
+  const cacheKey = buildStableKey({ scope: 'gutendx:books', ...params })
 
   // If Supabase not configured, proxy directly
   if (!supabaseAdmin) {
     console.log('no supabase admin in books search')
-    const res = await fetch(`https://gutendex.com/books?${url.searchParams.toString()}`, { next: { revalidate: 60 } })
+    const res = await fetch(`https://gutendex.com/books?${new URLSearchParams(params).toString()}`, { next: { revalidate: 60 } })
     const value = await res.json()
     return Response.json(value, {
       headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'passthrough' }
@@ -53,7 +58,7 @@ export async function GET(req: NextRequest) {
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
-    const res = await fetch(`https://gutendex.com/books?${url.searchParams.toString()}`, { signal: controller.signal, next: { revalidate: 60 } })
+    const res = await fetch(`https://gutendex.com/books?${new URLSearchParams(params).toString()}`, { signal: controller.signal, next: { revalidate: 60 } })
     clearTimeout(timeout)
     if (!res.ok) {
       return Response.json({ count: 0, next: null, previous: null, results: [] }, { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'x-cache': 'miss-error' } })
@@ -71,7 +76,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.warn('primary fetch aborted/failed, attempting fallback:', (e as Error)?.message)
     try {
-      const res = await fetch(`https://gutendex.com/books?${url.searchParams.toString()}`, { cache: 'no-store' })
+      const res = await fetch(`https://gutendex.com/books?${new URLSearchParams(params).toString()}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('fallback fetch failed')
       const value = await res.json()
       return Response.json(value, {
