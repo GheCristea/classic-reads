@@ -15,6 +15,8 @@ export type MobileControlsProps = {
   setFontSizePct: (value: number) => void
   themeName: 'light' | 'lightGray' | 'sepia'
   setThemeName: (value: 'light' | 'lightGray' | 'sepia') => void
+  flowMode: 'paginated' | 'scrolled-doc'
+  setFlowMode: (value: 'paginated' | 'scrolled-doc') => void
 }
 
 export function MobileControls(props: MobileControlsProps) {
@@ -29,6 +31,8 @@ export function MobileControls(props: MobileControlsProps) {
     setFontSizePct,
     themeName,
     setThemeName,
+    flowMode,
+    setFlowMode,
   } = props
 
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
@@ -188,6 +192,17 @@ export function MobileControls(props: MobileControlsProps) {
                 <option value="light">Light</option>
                 <option value="lightGray">Light Gray</option>
                 <option value="sepia">Sepia</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Reading mode</span>
+              <select
+                className="border rounded px-2 py-2 text-sm"
+                value={flowMode}
+                onChange={(e) => setFlowMode(e.target.value as 'paginated' | 'scrolled-doc')}
+              >
+                <option value="paginated">Pages</option>
+                <option value="scrolled-doc">Scroll</option>
               </select>
             </div>
             <div className="flex items-center justify-between">

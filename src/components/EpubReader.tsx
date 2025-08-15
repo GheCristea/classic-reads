@@ -68,6 +68,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
   // Reader appearance settings
   const [fontSizePct, setFontSizePct] = useState<number>(100)
   const [themeName, setThemeName] = useState<'light' | 'lightGray' | 'sepia'>('light')
+  const [flowMode, setFlowMode] = useState<'paginated' | 'scrolled-doc'>('paginated')
 
   // Load saved appearance settings on mount
   React.useEffect(() => {
@@ -75,6 +76,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       if (typeof window === 'undefined') return
       const savedFont = window.localStorage.getItem('reader-font-size')
       const savedTheme = window.localStorage.getItem('reader-theme') as 'light' | 'lightGray' | 'sepia' | null
+      const savedFlow = window.localStorage.getItem('reader-flow') as 'paginated' | 'scrolled-doc' | null
       if (savedFont) {
         const next = Math.min(200, Math.max(80, parseInt(savedFont, 10)))
         setFontSizePct(next)
@@ -95,6 +97,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         if (renditionRef.current) {
           renditionRef.current.themes.select(savedTheme)
         }
+      }
+      if (savedFlow === 'paginated' || savedFlow === 'scrolled-doc') {
+        setFlowMode(savedFlow)
       }
     } catch (e) {
       console.error('Error loading saved reader settings:', e)
@@ -380,12 +385,20 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       // Apply saved settings
       const savedFont = typeof window !== 'undefined' ? window.localStorage.getItem('reader-font-size') : null
       const savedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('reader-theme') : null
+      const savedFlow = typeof window !== 'undefined' ? (window.localStorage.getItem('reader-flow') as 'paginated' | 'scrolled-doc' | null) : null
       const isMobile = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false
       const nextFontPct = savedFont ? Math.min(200, Math.max(80, parseInt(savedFont, 10))) : (isMobile ? 120 : 110)
       const nextTheme = (savedTheme as 'light' | 'lightGray' | 'sepia') || 'light'
 
       rendition.themes.fontSize(`${nextFontPct}%`)
       rendition.themes.select(nextTheme)
+      try {
+        if (savedFlow) {
+          rendition.flow?.(savedFlow)
+        } else {
+          rendition.flow?.('paginated')
+        }
+      } catch {}
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error setting themes:', error)
@@ -423,6 +436,18 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       }
     }
   }, [])
+
+  // Apply flow mode changes and persist
+  React.useEffect(() => {
+    try {
+      const r = renditionRef.current
+      if (!r) return
+      r.flow?.(flowMode)
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('reader-flow', flowMode)
+      }
+    } catch {}
+  }, [flowMode])
 
   // Lock body scroll while reader is open (iOS-safe: lock both body and html)
   React.useEffect(() => {
@@ -510,6 +535,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       } else {
         rendition.prev?.()
       }
+      try { if (navigator.vibrate) navigator.vibrate(5) } catch {}
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Navigation error:', error)
@@ -657,6 +683,59 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     try {
       if (typeof swipeRef === 'function') swipeRef(node)
     } catch {}
+  }
+
+  // Long-press to toggle selection mode
+  const longPressTimerRef = React.useRef<number | null>(null)
+  const handleLongPressStart = () => {
+    try {
+      if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = window.setTimeout(() => {
+        setSelectionMode((v) => !v)
+        try { if (navigator.vibrate) navigator.vibrate(10) } catch {}
+      }, 500)
+    } catch {}
+  }
+  const handleLongPressEnd = () => {
+    try {
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+    } catch {}
+  }
+
+  // Pinch-to-zoom for font size
+  const pinchStateRef = React.useRef<{ startDistance: number | null; startFontSize: number }>({ startDistance: null, startFontSize: fontSizePct })
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      pinchStateRef.current = { startDistance: dist, startFontSize: fontSizePct }
+    }
+    handleLongPressStart()
+  }
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 2 && pinchStateRef.current.startDistance) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      const scale = dist / (pinchStateRef.current.startDistance || dist)
+      const next = Math.round(pinchStateRef.current.startFontSize * scale)
+      const clamped = Math.max(80, Math.min(200, next))
+      setFontSizePct(clamped)
+      try {
+        renditionRef.current?.themes.fontSize(`${clamped}%`)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('reader-font-size', String(clamped))
+        }
+      } catch {}
+    }
+  }
+  const handleTouchEnd = () => {
+    handleLongPressEnd()
+    pinchStateRef.current.startDistance = null
   }
 
   return (
@@ -879,18 +958,18 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               setControlsVisible(true)
             }
           }}
+          onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e) }}
           onTouchMove={(e) => {
+            handleTouchMove(e)
             if (!controlsVisible) return
             const first = e.touches && e.touches[0]
             if (!first) return
-            // If user swipes up significantly, hide controls
             if (first.clientY < 48) {
               setControlsVisible(false)
             }
           }}
-          onTouchStart={(e) => e.stopPropagation()}
           onPointerMove={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => { e.stopPropagation(); handleTouchEnd() }}
           style={{ touchAction: 'pan-y' }}
           {...swipeProps}
         >
@@ -965,7 +1044,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
           />
           
           {/* Debug overlay */}
-          {process.env.NODE_ENV === 'development' && (
+          {/* {process.env.NODE_ENV === 'development' && (
             <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs p-2 rounded z-50">
               <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
               <div>Error: {error ? 'Yes' : 'No'}</div>
@@ -974,7 +1053,22 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               <div>Navigating: {isNavigating ? 'Yes' : 'No'}</div>
               <div>Selection: {selectionMode ? 'On' : 'Off'}</div>
             </div>
-          )}
+          )} */}
+        </div>
+      )}
+
+      {/* Thin progress bar when controls are hidden */}
+      {!error && !controlsVisible && (
+        <div
+          className="pointer-events-none absolute left-0 right-0 bottom-0 z-20"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="h-[2px] bg-muted/50 w-full">
+            <div
+              className="h-full bg-primary/80 transition-[width] duration-150 ease-out"
+              style={{ width: `${Math.max(0, Math.min(100, progress.book))}%` }}
+            />
+          </div>
         </div>
       )}
 
@@ -1114,6 +1208,8 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
             console.error('Error updating theme:', e)
           }
         }}
+        flowMode={flowMode}
+        setFlowMode={setFlowMode}
       />
 
       {/* Table of Contents Overlay */}
