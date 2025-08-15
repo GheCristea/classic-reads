@@ -1043,7 +1043,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               )}
             </div>
             <div className="mt-2 flex items-center justify-center gap-3 text-[11px] text-muted-foreground">
-              <div>Page: {Math.max(0, Math.min(100, Math.round(progress.chapter)))}%</div>
+              <div>Chapter: {Math.max(0, Math.min(100, Math.round(progress.chapter)))}%</div>
               <span>•</span>
               <div>Book: {Math.max(0, Math.min(100, Math.round(progress.book)))}%</div>
               <span>•</span>
