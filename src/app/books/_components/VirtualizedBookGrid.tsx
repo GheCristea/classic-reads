@@ -17,8 +17,8 @@ interface VirtualizedBookGridProps {
 export function VirtualizedBookGrid({
   books,
   columnCount = 3,
-  rowHeight = 320,
-  gap = 12, // Reduced from 24 to 12 for better mobile spacing
+  rowHeight = 300, // Increased default height
+  gap = 16,
   showFullDetails = false,
 }: VirtualizedBookGridProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -48,27 +48,32 @@ export function VirtualizedBookGrid({
 
   // Measure an example row height (first book) to better estimate
   React.useEffect(() => {
-    if (!measureRef.current) return
+    if (!measureRef.current || books.length === 0) return
     // Defer to next frame to ensure layout is settled
     const id = requestAnimationFrame(() => {
       try {
         const el = measureRef.current!
         const h = el.offsetHeight
-        if (h && Math.abs(h - rowHeightPx) > 2) {
-          setRowHeightPx(h)
+        // Add minimal padding to prevent overlaps
+        const adjustedHeight = h + Math.floor(gap / 2) // Use half the gap as buffer
+        if (adjustedHeight && Math.abs(adjustedHeight - rowHeightPx) > 10) {
+          console.log(`📏 Updating row height: ${rowHeightPx}px -> ${adjustedHeight}px (measured: ${h}px + buffer: ${Math.floor(gap / 2)}px)`)
+          setRowHeightPx(adjustedHeight)
         }
-      } catch {}
+      } catch (error) {
+        console.warn('Error measuring row height:', error)
+      }
     })
     return () => cancelAnimationFrame(id)
-  }, [cols, books.length, showFullDetails, rowHeightPx])
+  }, [cols, books.length, showFullDetails, gap, rowHeightPx])
 
   const rowCount = Math.ceil(books.length / Math.max(1, cols))
-  const estimateSize = React.useCallback(() => rowHeightPx + gap, [rowHeightPx, gap])
+  const estimateSize = React.useCallback(() => rowHeightPx, [rowHeightPx]) // Height already includes spacing
 
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
     estimateSize,
-    scrollMargin: 120,
+    scrollMargin: 0, // Remove unnecessary top margin
     overscan: overscanRows,
   })
 
@@ -80,7 +85,7 @@ export function VirtualizedBookGrid({
       {/* Hidden measurer to tune row height */}
       {books.length > 0 && (
         <div className="absolute invisible pointer-events-none" style={{ left: '-9999px', top: '0px' }}>
-          <div ref={measureRef} className="grid gap-3 sm:gap-4 lg:gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ rowGap: gap }}>
+          <div ref={measureRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: gap }}>
             <BookCard book={books[0]} showFullDetails={showFullDetails} />
           </div>
         </div>
@@ -105,8 +110,8 @@ export function VirtualizedBookGrid({
               }}
             >
               <div
-                className="grid gap-3 sm:gap-4 lg:gap-6 sm:grid-cols-2"
-                style={{ rowGap: gap, marginBottom: 0 }}
+                className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                style={{ gap: gap, marginBottom: 0 }}
               >
                 {slice.map((book) => (
                   <BookCard key={book.id} book={book} showFullDetails={showFullDetails} />
