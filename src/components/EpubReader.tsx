@@ -67,22 +67,30 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
 
   // Reader appearance settings
   const [fontSizePct, setFontSizePct] = useState<number>(100)
-  const [themeName, setThemeName] = useState<'light' | 'sepia'>('light')
+  const [themeName, setThemeName] = useState<'light' | 'lightGray' | 'sepia'>('light')
 
   // Load saved appearance settings on mount
   React.useEffect(() => {
     try {
       if (typeof window === 'undefined') return
       const savedFont = window.localStorage.getItem('reader-font-size')
-      const savedTheme = window.localStorage.getItem('reader-theme') as 'light' | 'sepia' | null
+      const savedTheme = window.localStorage.getItem('reader-theme') as 'light' | 'lightGray' | 'sepia' | null
       if (savedFont) {
         const next = Math.min(200, Math.max(80, parseInt(savedFont, 10)))
         setFontSizePct(next)
         if (renditionRef.current) {
           renditionRef.current.themes.fontSize(`${next}%`)
         }
+      } else {
+        // Evidence-based default: slightly larger font on mobile for comfort
+        const isMobile = window.matchMedia('(max-width: 640px)').matches
+        const def = isMobile ? 120 : 110
+        setFontSizePct(def)
+        if (renditionRef.current) {
+          renditionRef.current.themes.fontSize(`${def}%`)
+        }
       }
-      if (savedTheme === 'light' || savedTheme === 'sepia') {
+      if (savedTheme === 'light' || savedTheme === 'lightGray' || savedTheme === 'sepia') {
         setThemeName(savedTheme)
         if (renditionRef.current) {
           renditionRef.current.themes.select(savedTheme)
@@ -326,16 +334,28 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
     // Customize the reader appearance
     try {
       // Base default theme (will be overridden by selected theme)
+      // Evidence-based defaults for comfortable mobile reading
       rendition.themes.default({
         body: {
-          'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          'line-height': '1.6',
+          'font-family': 'Georgia, "Times New Roman", Times, serif',
+          'line-height': '1.4',
           'margin': '0',
-          'padding': '2rem'
+          'padding': '0 10%',
+          'text-align': 'left',
+          'hyphens': 'auto',
+        },
+        'img': {
+          'max-width': '100%',
+          'height': 'auto',
+          'display': 'block',
+          'margin': '1em auto',
+        },
+        'p': {
+          'margin': '0 0 0.8em 0',
         }
       })
 
-      // Register light/dark/sepia themes
+      // Register light/gray/sepia themes (positive polarity preferred)
       rendition.themes.register('light', {
         body: {
           'background': '#ffffff',
@@ -343,6 +363,12 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
         }
       })
 
+      rendition.themes.register('lightGray', {
+        body: {
+          'background': '#f7f7f7',
+          'color': '#1f2937'
+        }
+      })
 
       rendition.themes.register('sepia', {
         body: {
@@ -354,8 +380,9 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
       // Apply saved settings
       const savedFont = typeof window !== 'undefined' ? window.localStorage.getItem('reader-font-size') : null
       const savedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('reader-theme') : null
-      const nextFontPct = savedFont ? Math.min(200, Math.max(80, parseInt(savedFont, 10))) : 100
-      const nextTheme = (savedTheme as 'light' | 'sepia') || 'light'
+      const isMobile = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false
+      const nextFontPct = savedFont ? Math.min(200, Math.max(80, parseInt(savedFont, 10))) : (isMobile ? 120 : 110)
+      const nextTheme = (savedTheme as 'light' | 'lightGray' | 'sepia') || 'light'
 
       rendition.themes.fontSize(`${nextFontPct}%`)
       rendition.themes.select(nextTheme)
@@ -713,7 +740,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               className="border rounded px-2 py-1 text-sm"
               value={themeName}
               onChange={(e) => {
-                const next = e.target.value as 'light' | 'sepia'
+                const next = e.target.value as 'light' | 'lightGray' | 'sepia'
                 setThemeName(next)
                 try {
                   if (renditionRef.current) {
@@ -728,6 +755,7 @@ export function EpubReader({ url, title, author, onClose, progressKey }: EpubRea
               }}
             >
               <option value="light">Light</option>
+              <option value="lightGray">Light Gray</option>
               <option value="sepia">Sepia</option>
             </select>
           </div>

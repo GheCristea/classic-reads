@@ -13,8 +13,8 @@ export type MobileControlsProps = {
   isNavigating: boolean
   fontSizePct: number
   setFontSizePct: (value: number) => void
-  themeName: 'light' | 'sepia'
-  setThemeName: (value: 'light' | 'sepia') => void
+  themeName: 'light' | 'lightGray' | 'sepia'
+  setThemeName: (value: 'light' | 'lightGray' | 'sepia') => void
 }
 
 export function MobileControls(props: MobileControlsProps) {
@@ -183,9 +183,10 @@ export function MobileControls(props: MobileControlsProps) {
               <select
                 className="border rounded px-2 py-2 text-sm"
                 value={themeName}
-                onChange={(e) => setThemeName(e.target.value as 'light' | 'sepia')}
+                onChange={(e) => setThemeName(e.target.value as 'light' | 'lightGray' | 'sepia')}
               >
                 <option value="light">Light</option>
+                <option value="lightGray">Light Gray</option>
                 <option value="sepia">Sepia</option>
               </select>
             </div>
