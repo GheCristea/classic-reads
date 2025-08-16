@@ -23,7 +23,7 @@ export function Pagination({ currentPage, totalPages, hasNext, hasPrevious }: Pa
 
   const getVisiblePages = () => {
     const pages: (number | string)[] = []
-    const maxVisible = 7
+    const maxVisible = 5
 
     if (totalPages <= maxVisible) {
       return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -79,7 +79,7 @@ export function Pagination({ currentPage, totalPages, hasNext, hasPrevious }: Pa
 
       {/* Page numbers */}
       <div className="flex items-center space-x-1">
-        {visiblePages.map((page, index) => (
+        {visiblePages.slice(0, 5).map((page, index) => (
           <div key={index}>
             {page === "..." ? (
               <div className="flex items-center justify-center w-9 h-9">

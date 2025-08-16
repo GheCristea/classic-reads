@@ -85,14 +85,14 @@ export function VirtualizedBookGrid({
       {/* Hidden measurer to tune row height */}
       {books.length > 0 && (
         <div className="absolute invisible pointer-events-none" style={{ left: '-9999px', top: '0px' }}>
-          <div ref={measureRef} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: gap }}>
+          <div ref={measureRef} className="flex flex-row" style={{ gap: gap }}>
             <BookCard book={books[0]} showFullDetails={showFullDetails} />
           </div>
         </div>
       )}
       <div
         style={{
-          height: totalHeight,
+          height: totalHeight - 6000,
           position: 'relative',
         }}
       >
