@@ -8,7 +8,7 @@ import { RecentBooksSection } from "./_components/RecentBooksSection"
 
 export default async function Home() {
   const searchTerms = getSuggestedSearchTerms()
-
+const isMobile = true;
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -45,7 +45,8 @@ export default async function Home() {
       <RecentBooksSection />
 
       {/* Features Section */}
-      <section className="py-16 px-4">
+      {
+        !isMobile ? <section className="py-16 px-4">
         <div className="container mx-auto max-w-full">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Why Choose Classic Reads?</h2>
@@ -86,7 +87,7 @@ export default async function Home() {
             </Card>
           </div>
         </div>
-      </section>
+      </section> : null }
 
       {/* Popular Books Section */}
       <section className="pb-16 px-4 bg-muted/30">
