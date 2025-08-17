@@ -1,0 +1,97 @@
+{
+  "Gateway Classics": [
+    {
+      "friendlyName": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "bookId": 1342
+    },
+    {
+      "friendlyName": "Animal Farm",
+      "author": "George Orwell",
+      "bookId": 1148
+    },
+    {
+      "friendlyName": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "bookId": 64317
+    },
+    {
+      "friendlyName": "Frankenstein",
+      "author": "Mary Shelley",
+      "bookId": 84
+    }
+  ],
+  "Page-Turners": [
+    {
+      "friendlyName": "The Adventures of Sherlock Holmes",
+      "author": "Arthur Conan Doyle",
+      "bookId": 1661
+    },
+    {
+      "friendlyName": "Treasure Island",
+      "author": "Robert Louis Stevenson",
+      "bookId": 120
+    },
+    {
+      "friendlyName": "Dracula",
+      "author": "Bram Stoker",
+      "bookId": 345
+    },
+    {
+      "friendlyName": "Dr. Jekyll and Mr. Hyde",
+      "author": "Robert Louis Stevenson",
+      "bookId": 43
+    }
+  ],
+  "Modern Feel": [
+    {
+      "friendlyName": "Of Mice and Men",
+      "author": "John Steinbeck",
+      "bookId": 675
+    },
+    {
+      "friendlyName": "The Metamorphosis",
+      "author": "Franz Kafka",
+      "bookId": 5200
+    },
+    {
+      "friendlyName": "The Picture of Dorian Gray",
+      "author": "Oscar Wilde",
+      "bookId": 174
+    }
+  ],
+  "Romance & Relationships": [
+    {
+      "friendlyName": "Emma",
+      "author": "Jane Austen",
+      "bookId": 158
+    },
+    {
+      "friendlyName": "Jane Eyre",
+      "author": "Charlotte Brontë",
+      "bookId": 1260
+    },
+    {
+      "friendlyName": "Wuthering Heights",
+      "author": "Emily Brontë",
+      "bookId": 768
+    }
+  ],
+  "Adventure & Escape": [
+    {
+      "friendlyName": "The Call of the Wild",
+      "author": "Jack London",
+      "bookId": 215
+    },
+    {
+      "friendlyName": "Around the World in 80 Days",
+      "author": "Jules Verne",
+      "bookId": 103
+    },
+    {
+      "friendlyName": "The Time Machine",
+      "author": "H.G. Wells",
+      "bookId": 35
+    }
+  ]
+}

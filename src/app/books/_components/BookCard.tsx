@@ -3,16 +3,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Book as BookType, formatAuthors, getEpubFormat } from "@/lib/gutendx"
 import { truncateText } from "@/lib/utils"
-import { Book as BookIcon, Download, User } from "lucide-react"
+import { Book as BookIcon, User } from "lucide-react"
 import Link from "next/link"
+import DownloadCount from "./DownloadCount"
 import StartReadingButton from "./StartReadingButton"
 
 interface BookCardProps {
   book: BookType
   showFullDetails?: boolean
+  showDownloadCount?: boolean
 }
 
-export function BookCard({ book, showFullDetails = false }: BookCardProps) {
+export function BookCard({ book, showFullDetails = false, showDownloadCount = true }: BookCardProps) {
   const authorText = formatAuthors(book.authors)
   const primarySubject = book.subjects[0] || "General"
   const language = book.languages[0]?.toUpperCase() || "EN"
@@ -89,10 +91,7 @@ export function BookCard({ book, showFullDetails = false }: BookCardProps) {
       <CardFooter className="pt-3 flex flex-col gap-3">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Download className="h-3 w-3" />
-              <span>{book.download_count.toLocaleString()}</span>
-            </div>
+            {showDownloadCount ? <DownloadCount count={book.download_count} /> : null}
             {book.copyright !== null && (
               <Badge variant={book.copyright ? "destructive" : "secondary"} className="text-xs">
                 {book.copyright ? "©" : "Public Domain"}
