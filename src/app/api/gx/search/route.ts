@@ -1,5 +1,6 @@
 import { buildStableKey, getExpiryIso, supabaseAdmin } from '@/lib/supabaseAdmin'
 import { NextRequest } from 'next/server'
+import type { Book } from '@/lib/gutendx'
 
 const ONE_MONTH_SECONDS = 30 * 24 * 60 * 60 // ~30 days
 
@@ -64,6 +65,10 @@ export async function GET(req: NextRequest) {
       return Response.json({ count: 0, next: null, previous: null, results: [] }, { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'x-cache': 'miss-error' } })
     }
     const value = await res.json()
+    // Save individual books to database
+    if (value?.results && Array.isArray(value.results)) {
+      await saveIndividualBooks(value.results)
+    }
     const { error: upsertError } = await supabaseAdmin
       .from('books_cache')
       .upsert({ cache_key: cacheKey, value, expires_at: getExpiryIso(ONE_MONTH_SECONDS) }, { onConflict: 'cache_key' })
@@ -94,6 +99,10 @@ async function refreshInBackground(cacheKey: string, params: Record<string, stri
     const res = await fetch(`https://gutendex.com/books?${new URLSearchParams(params).toString()}`, { cache: 'no-store' })
     if (!res.ok) return
     const value = await res.json()
+    // Save individual books to database
+    if (value?.results && Array.isArray(value.results)) {
+      await saveIndividualBooks(value.results)
+    }
     const { error: upsertError } = await supabaseAdmin!
       .from('books_cache')
       .upsert({ cache_key: cacheKey, value, expires_at: getExpiryIso(ONE_MONTH_SECONDS) }, { onConflict: 'cache_key' })
@@ -101,6 +110,45 @@ async function refreshInBackground(cacheKey: string, params: Record<string, stri
       console.error('books_cache upsert error (background):', upsertError.message)
     }
   } catch {}
+}
+
+async function saveIndividualBooks(books: Book[]) {
+  if (!supabaseAdmin || !books || !Array.isArray(books) || books.length === 0) {
+    return
+  }
+
+  try {
+    const booksToSave = books.map(book => ({
+      id: book.id,
+      title: book.title,
+      authors: book.authors,
+      translators: book.translators,
+      subjects: book.subjects,
+      bookshelves: book.bookshelves,
+      languages: book.languages,
+      copyright: book.copyright,
+      media_type: book.media_type,
+      formats: book.formats,
+      download_count: book.download_count,
+      updated_at: new Date().toISOString(),
+      last_fetched: new Date().toISOString()
+    }))
+
+    const { error } = await supabaseAdmin
+      .from('books')
+      .upsert(booksToSave, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
+
+    if (error) {
+      console.error('Error saving individual books:', error.message)
+    } else {
+      console.log(`Successfully saved ${booksToSave.length} books to database`)
+    }
+  } catch (error) {
+    console.error('Exception while saving books:', error)
+  }
 }
 
 
