@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Book as BookType, formatAuthors, getEpubFormat } from "@/lib/gutendx"
-import { truncateText } from "@/lib/utils"
+import { cn, truncateText } from "@/lib/utils"
 import { Book as BookIcon, User } from "lucide-react"
 import Link from "next/link"
 import DownloadCount from "./DownloadCount"
@@ -12,9 +12,10 @@ interface BookCardProps {
   book: BookType
   showFullDetails?: boolean
   showDownloadCount?: boolean
+  className?: string
 }
 
-export function BookCard({ book, showFullDetails = false, showDownloadCount = true }: BookCardProps) {
+export function BookCard({ book, showFullDetails = false, showDownloadCount = true, className }: BookCardProps) {
   const authorText = formatAuthors(book.authors)
   const primarySubject = book.subjects[0] || "General"
   const language = book.languages[0]?.toUpperCase() || "EN"
@@ -29,7 +30,7 @@ export function BookCard({ book, showFullDetails = false, showDownloadCount = tr
   const epubFormat = getEpubFormat(book)
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 h-full flex flex-col">
+    <Card className={cn("group hover:shadow-lg transition-all duration-200 h-full flex flex-col", className)}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg leading-tight line-clamp-2">

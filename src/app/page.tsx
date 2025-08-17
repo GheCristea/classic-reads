@@ -12,7 +12,7 @@ const isMobile = true;
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="py-20 px-4 bg-gradient-to-br from-primary/10 via-background to-muted/50">
+      <section className="py-20 px-2 bg-gradient-to-br from-primary/10 via-background to-muted/50">
         <div className="container mx-auto max-w-full text-center space-y-8">
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -46,7 +46,7 @@ const isMobile = true;
 
       {/* Features Section */}
       {
-        !isMobile ? <section className="py-16 px-4">
+        !isMobile ? <section className="py-16 px-2">
         <div className="container mx-auto max-w-full">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Why Choose Classic Reads?</h2>
@@ -90,14 +90,14 @@ const isMobile = true;
       </section> : null }
 
       {/* Popular Books Section */}
-      <section className="pb-16 px-4 bg-muted/30">
+      <section className="pb-16 bg-muted/30 lg:px-6">
         <div className="container mx-auto max-w-full">
           <PopularBooksSection />
         </div>
       </section>
 
       {/* Browse by Genre Section */}
-      <section className="py-16 px-4 bg-background">
+      <section className="py-16 px-2 bg-background">
         <div className="container mx-auto max-w-full">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-3xl font-bold">Browse by Interest</h2>
@@ -125,7 +125,7 @@ const isMobile = true;
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-primary/5">
+      <section className="py-16 px-2 bg-primary/5">
         <div className="container mx-auto max-w-full text-center space-y-6">
           <h2 className="text-3xl font-bold">Start Your Literary Journey</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">

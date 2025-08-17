@@ -110,10 +110,10 @@ export function PopularBooksSection() {
               </Button>
             ))}
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <div className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6">
             {selectedBooks.map((bookData) => {
               const book = convertToBook(bookData)
-              return <BookCard key={book.id} book={book} showDownloadCount={false} />
+              return <BookCard key={book.id} book={book} showDownloadCount={false} className="w-full sm:w-1/2 lg:w-1/4" />
             })}
           </div>
         </div>
