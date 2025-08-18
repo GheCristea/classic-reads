@@ -102,10 +102,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               {epubFormat && (
                 <Card id="read-online" className="border-green-200 bg-green-50">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-800">
+                    <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2 text-green-800">
                       <BookIcon className="h-5 w-5" />
                       Read Online
-                    </CardTitle>
+                    </h3 >
                     <CardDescription className="text-green-700">
                       Start reading this book immediately in your browser with our built-in EPUB reader.
                     </CardDescription>
@@ -119,6 +119,18 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 </Card>
               )}
             </div>
+
+            {/* Summary */}
+            {Array.isArray(book.summaries) && book.summaries.length > 0 && book.summaries[0] && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground whitespace-pre-line">{book.summaries[0]}</p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Author Information */}
             {book.authors.length > 0 && (

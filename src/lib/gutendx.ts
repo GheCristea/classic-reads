@@ -22,6 +22,7 @@ export interface Book {
   media_type: string;
   formats: BookFormat;
   download_count: number;
+  summaries?: string[];
 }
 
 export interface BooksResponse {
