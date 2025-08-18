@@ -13,10 +13,9 @@ interface BookCardProps {
   showFullDetails?: boolean
   showDownloadCount?: boolean
   className?: string
-  shouldRenderLink?: boolean
 }
 
-export function BookCard({ book, showFullDetails = false, showDownloadCount = true, className, shouldRenderLink = true }: BookCardProps) {
+export function BookCard({ book, showFullDetails = false, showDownloadCount = true, className }: BookCardProps) {
   const authorText = formatAuthors(book.authors)
   const primarySubject = book.subjects[0] || "General"
   const language = book.languages[0]?.toUpperCase() || "EN"
@@ -35,14 +34,13 @@ export function BookCard({ book, showFullDetails = false, showDownloadCount = tr
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg leading-tight line-clamp-2">
-            { shouldRenderLink ? <Link 
+            <Link 
               href={`/books/${book.id}`}
               prefetch={false}
               className="hover:text-primary transition-colors"
             >
               {book.title}
-            </Link> : null
-          }
+            </Link>
           </CardTitle>
           <div className="flex flex-col gap-1">
             <Badge variant="secondary" className="text-xs shrink-0">

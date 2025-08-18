@@ -22,7 +22,6 @@ export interface Book {
   media_type: string;
   formats: BookFormat;
   download_count: number;
-  summaries?: string[];
 }
 
 export interface BooksResponse {
@@ -100,16 +99,9 @@ export async function fetchBookById(id: number): Promise<Book> {
   const url = `${GUTENDX_BASE_URL}/books/${id}`;
 
   try {
-    // Add timeout to prevent hanging
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
     const response = await fetch(url, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-      signal: controller.signal
+      next: { revalidate: 3600 } // Cache for 1 hour
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -122,17 +114,6 @@ export async function fetchBookById(id: number): Promise<Book> {
     return book;
   } catch (error) {
     console.error(`Error fetching book ${id}:`, error);
-    
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Request timed out - please check your internet connection');
-      }
-      if (error.message.includes('fetch')) {
-        throw new Error('Network error - unable to connect to book database');
-      }
-    }
-    
     throw error;
   }
 }
@@ -311,58 +292,6 @@ export function normalizeLanguageCode(lang: string): string {
   };
 
   return languageCodes[lang] || lang.toUpperCase();
-}
-
-/**
- * Gets book summary - uses API summary if available, generates fallback if not
- */
-export function getBookSummary(book: Book): string {
-  try {
-    // Use API summary if available
-    if (book.summaries && book.summaries.length > 0) {
-      // Join multiple summaries or use the first one
-      return book.summaries.length === 1 
-        ? book.summaries[0]
-        : book.summaries.join(' ');
-    }
-
-    // Fallback: Generate summary from metadata
-    const { subjects, title, authors, languages } = book;
-    const authorName = authors?.[0]?.name || 'Unknown Author';
-    const bookTitle = title || 'This work';
-    
-    // Handle edge case - no subjects
-    if (!subjects || subjects.length === 0) {
-      return `"${bookTitle}" by ${authorName} is a classic work from Project Gutenberg's collection.`;
-    }
-
-    // Extract meaningful subjects (filter out technical classifications)
-    const meaningfulSubjects = subjects.filter(subject => 
-      subject && 
-      typeof subject === 'string' &&
-      !subject.toLowerCase().includes('classified') && 
-      !subject.toLowerCase().includes('lcsh') &&
-      subject.length > 3
-    ).slice(0, 3);
-
-    if (meaningfulSubjects.length === 0) {
-      const language = languages?.[0] || 'Unknown language';
-      return `"${bookTitle}" by ${authorName} is a literary work available in ${language}.`;
-    }
-
-    // Generate summary based on subjects
-    const subjectText = meaningfulSubjects.length === 1 
-      ? meaningfulSubjects[0]
-      : meaningfulSubjects.slice(0, -1).join(', ') + ' and ' + meaningfulSubjects.slice(-1)[0];
-
-    return `"${bookTitle}" by ${authorName} explores themes of ${subjectText.toLowerCase()}. This classic work offers readers insight into these subjects through the author's distinctive literary style.`;
-  } catch (error) {
-    console.error('Error generating book summary:', error);
-    // Fallback summary if all else fails
-    const authorName = book.authors?.[0]?.name || 'Unknown Author';
-    const bookTitle = book.title || 'This work';
-    return `"${bookTitle}" by ${authorName} is available from Project Gutenberg.`;
-  }
 }
 
 /**

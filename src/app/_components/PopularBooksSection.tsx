@@ -113,7 +113,7 @@ export function PopularBooksSection() {
           <div className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6">
             {selectedBooks.map((bookData) => {
               const book = convertToBook(bookData)
-              return <BookCard key={book.id} book={book} showDownloadCount={false} shouldRenderLink={false} className="w-full sm:w-1/2 lg:w-1/4" />
+              return <BookCard key={book.id} book={book} showDownloadCount={false} className="w-full sm:w-1/2 lg:w-1/4" />
             })}
           </div>
         </div>
