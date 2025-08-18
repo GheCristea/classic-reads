@@ -86,9 +86,7 @@ export function SearchField({
       abortRef.current = controller
       try {
         setLoading(true)
-                const data = await (fetchSuggestions
-          ? fetchSuggestions(trimmed, 8)
-          : getSuggestions(trimmed, 8, controller.signal))
+        const data = await (fetchSuggestions ? fetchSuggestions(trimmed, 8) : getSuggestions(trimmed, 8, controller.signal))
         if (controller.signal.aborted) return
         setItems(data)
         const shouldOpen = data.length > 0
