@@ -1,13 +1,12 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Book, fetchBookById, fetchBooks, formatAuthors, getBookCoverUrl, getBookFormats, getEpubFormat, normalizeLanguageCode } from "@/lib/gutendx"
+import { fetchBookById, formatAuthors, getBookCoverUrl, getBookFormats, getEpubFormat, normalizeLanguageCode } from "@/lib/gutendx"
 import { truncateText } from "@/lib/utils"
 import { Book as BookIcon, Download, ExternalLink, User } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BackButton } from "../_components/BackButton"
-import { BookCard } from "../_components/BookCard"
 import { EpubReaderWrapper } from "../_components/EpubReaderWrapper"
 import { RecentlyViewedTracker } from "../_components/RecentlyViewedTracker"
 
@@ -31,17 +30,17 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     const book = await fetchBookById(bookId)
     
     // Get related books by the same author or similar subjects
-    let relatedBooks: Book[] = []
-    try {
-      if (book.authors.length > 0) {
-        const authorBooks = await fetchBooks({
-          search: book.authors[0].name,
-        })
-        relatedBooks = authorBooks.results.filter(b => b.id !== book.id).slice(0, 4)
-      }
-    } catch (error) {
-      console.error("Error fetching related books:", error)
-    }
+    // let relatedBooks: Book[] = []
+    // try {
+    //   if (book.authors.length > 0) {
+    //     const authorBooks = await fetchBooks({
+    //       search: book.authors[0].name,
+    //     })
+    //     relatedBooks = authorBooks.results.filter(b => b.id !== book.id).slice(0, 4)
+    //   }
+    // } catch (error) {
+    //   console.error("Error fetching related books:", error)
+    // }
 
     const formats = getBookFormats(book)
     const authorText = formatAuthors(book.authors)
@@ -296,7 +295,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         </div>
 
         {/* Related Books */}
-        {relatedBooks.length > 0 && (
+        {/* {relatedBooks.length > 0 && (
           <section className="mt-12">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">More by {book.authors[0]?.name}</h2>
@@ -312,7 +311,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               ))}
             </div>
           </section>
-        )}
+        )} */}
       </div>
     )
   } catch (error) {
