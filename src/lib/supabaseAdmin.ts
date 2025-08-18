@@ -5,16 +5,19 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('Supabase admin client missing env: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
 }
 
-export const supabaseAdmin = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-  : undefined
-
-export type CacheRecord = {
-  cache_key: string
-  value: unknown
-  expires_at: string
-  created_at?: string
+export type PgCatalog = {
+  pg_catalog: {
+    id: string
+    title: string
+    authors: string
+    issued: string
+    language: string
+    updated_at: string
+  }
 }
+export const supabaseAdmin = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient<PgCatalog>(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : undefined
 
 export function getExpiryIso(ttlSeconds: number): string {
   return new Date(Date.now() + ttlSeconds * 1000).toISOString()
