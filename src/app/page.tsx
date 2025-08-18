@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { getSuggestedSearchTerms } from "@/lib/gutendx"
-import { ArrowRight, BookOpen, Download, Globe, Star } from "lucide-react"
+import { ArrowRight, BookOpen, Globe, Star } from "lucide-react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { PopularBooksSection } from "./_components/PopularBooksSection"
 import { RecentBooksSection } from "./_components/RecentBooksSection"
 
 export default async function Home() {
   const searchTerms = getSuggestedSearchTerms()
-const isMobile = true;
+  const isMobile = true;
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -45,49 +46,7 @@ const isMobile = true;
       <RecentBooksSection />
 
       {/* Features Section */}
-      {
-        !isMobile ? <section className="py-16 px-2">
-        <div className="container mx-auto max-w-full">
-          <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl font-bold">Why Choose Classic Reads?</h2>
-            <p className="text-muted-foreground">
-              Your gateway to the world&rsquo;s greatest literature
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 w-full">
-            <Card>
-              <CardHeader>
-                <BookOpen className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Vast Collection</CardTitle>
-                <CardDescription>
-                  Access over 70,000 books from Project Gutenberg&apos;s extensive digital library
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <Download className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Multiple Formats</CardTitle>
-                <CardDescription>
-                  Download books in EPUB, PDF, TXT, and HTML formats for any device
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <Globe className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>Completely Free</CardTitle>
-                <CardDescription>
-                  All books are in the public domain and completely free to read and download
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section> : null }
+      { !isMobile ? <FeaturesSection /> : null }
 
       {/* Popular Books Section */}
       <section className="pb-16 bg-muted/30 lg:px-6">
@@ -143,3 +102,5 @@ const isMobile = true;
     </div>
   )
 }
+
+const FeaturesSection = dynamic(() => import("./_components/FeaturesSection"));
