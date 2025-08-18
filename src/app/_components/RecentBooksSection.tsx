@@ -1,14 +1,12 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
-import { getRecentBooks, type RecentBook } from "@/lib/recent"
-import { Book as BookIcon } from "lucide-react"
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Eye, Play } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useCallback } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { fetchBookById, getEpubFormat } from "@/lib/gutendx"
+import { getRecentBooks, type RecentBook } from "@/lib/recent"
+import { Book as BookIcon, Eye, Play } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
 
 export function RecentBooksSection() {
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null)
@@ -36,14 +34,8 @@ export function RecentBooksSection() {
   }, [])
 
   const handleBookClick = useCallback((bookId: string) => {
-    // For touch devices, toggle overlay on tap
-    if (!window.matchMedia('(hover: hover)').matches) {
-      setActiveOverlay(current => current === bookId ? null : bookId)
-    } else {
-      // Fallback navigation for desktop if no overlay
-      router.push(`/books/${bookId}`)
-    }
-  }, [router])
+    setActiveOverlay(current => current === bookId ? null : bookId)
+  }, [])
 
   const handleViewBook = useCallback((bookId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -123,7 +115,7 @@ export function RecentBooksSection() {
 
                     {/* Overlay */}
                     <div
-                      className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 flex items-center justify-center gap-2 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity px-2 duration-200 flex flex-col items-stretch justify-center gap-2 ${showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'
                         }`}
                     >
                       <Button

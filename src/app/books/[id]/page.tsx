@@ -102,10 +102,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               {epubFormat && (
                 <Card id="read-online" className="border-green-200 bg-green-50">
                   <CardHeader>
-                    <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2 text-green-800">
-                      <BookIcon className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 text-green-800">
+                    <BookIcon className="h-5 w-5" />
                       Read Online
-                    </h3 >
+                    </CardTitle>
                     <CardDescription className="text-green-700">
                       Start reading this book immediately in your browser with our built-in EPUB reader.
                     </CardDescription>
