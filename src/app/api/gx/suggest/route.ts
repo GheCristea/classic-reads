@@ -1,140 +1,101 @@
-import { buildStableKey, getExpiryIso, supabaseAdmin } from '@/lib/supabaseAdmin';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { NextRequest } from 'next/server';
 
-const ONE_MONTH_SECONDS = 30 * 24 * 60 * 60 // ~30 days
-
-type Item = { id: string; title: string; subtitle?: string }
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+type SupabaseSuggestion = {
+  id: string
+  title: string
+  authors: string
+  issued: string
+  language: string
+  updated_at: string
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') || '').trim().slice(0, 100)
-  const type = (searchParams.get('type') || 'books').toLowerCase()
-  const limit = Math.min(12, Math.max(1, Number(searchParams.get('limit') || 8)))
+  const parsedLimit = parseInt(searchParams.get('limit') || '8')
+  const queryLimit = !isNaN(parsedLimit) ? parsedLimit : 8
+  const type = (searchParams.get('type') || '').toLowerCase()
 
   if (!q || q.length < 3) {
     return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=60' } })
   }
 
-  // Use the same underlying cache as the search endpoint: books_cache keyed by Gutendex params
-  // Normalize search query to lowercase for case-insensitive caching
+  // Normalize search query to lowercase for case-insensitive matching
   const normalizedQ = q.toLowerCase().trim()
-  const booksCacheKey = buildStableKey({ scope: 'gutendx:books', search: normalizedQ, page: '1' })
 
   if (!supabaseAdmin) {
-    const items = await fetchSuggest(q, type, limit)
-    return Response.json(items, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'passthrough' } })
+    return Response.json([], { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'passthrough' } })
   }
 
-  const now = new Date()
+  // Escape % and _ for LIKE patterns
+  const escaped = normalizedQ.replace(/[%_]/g, '\\$&')
+  const likeAny = `%${escaped}%`
+
+  // Fetch a bit more than we need so we can rank locally
+  const fetchLimit = Math.max(queryLimit * 3, 24)
+
   const { data: rows, error } = await supabaseAdmin
-    .from('books_cache')
-    .select('value, expires_at')
-    .eq('cache_key', booksCacheKey)
-    .order('expires_at', { ascending: false })
-    .limit(1)
+    .from('pg_catalog')
+    .select('id, title, authors')
+    .or(`title.ilike.${likeAny},authors.ilike.${likeAny}`)
+    .limit(fetchLimit)
 
-  const hit = Array.isArray(rows) && rows.length > 0 ? rows[0] as { value: unknown; expires_at: string } : null
-  if (!error && hit) {
-    const isFresh = new Date(hit.expires_at) > now
-    if (isFresh) {
-      const items = toItemsFromBooksValue(hit.value, type, limit)
-      return Response.json(items, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'hit' } })
-    }
-    void refreshInBackground(booksCacheKey, normalizedQ)
-    const items = toItemsFromBooksValue(hit.value, type, limit)
-    return Response.json(items, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'stale' } })
+  if (error) {
+    console.error('error fetching suggestions', error)
+    console.log('error TRACE', error.stack?.split('\n').slice(0, 3).join('\n') ?? 'no stack')
+    return Response.json([], { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'passthrough' } })
   }
 
-  // Cache miss: fetch Gutendex, store raw response in books_cache, then derive items
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 6000)
-    const res = await fetch(`https://gutendex.com/books?search=${encodeURIComponent(q.toLowerCase().trim())}&page=1`, { signal: controller.signal, next: { revalidate: 60 } })
-    clearTimeout(timeout)
-    if (!res.ok) {
-      return Response.json([], { headers: { 'Cache-Control': 'public, max-age=30', 'x-cache': 'miss-error' } })
-    }
-    const value = await res.json()
-    const { error: upsertError } = await supabaseAdmin
-      .from('books_cache')
-      .upsert({ cache_key: booksCacheKey, value, expires_at: getExpiryIso(ONE_MONTH_SECONDS) }, { onConflict: 'cache_key' })
-    if (upsertError) {
-      console.error('books_cache upsert error (suggest):', upsertError.message)
-    }
-    const items = toItemsFromBooksValue(value, type, limit)
-    return Response.json(items, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'miss' } })
-  } catch {
-    return Response.json([], { headers: { 'Cache-Control': 'public, max-age=30', 'x-cache': 'timeout' } })
-  }
-}
+  const list = Array.isArray(rows) ? (rows as SupabaseSuggestion[]) : []
 
-async function fetchSuggest(q: string, type: string, limit: number): Promise<Item[]> {
-  const url = `https://gutendex.com/books?search=${encodeURIComponent(q.toLowerCase().trim())}&page=1`
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 6000)
-  try {
-    const res = await fetch(url, { signal: controller.signal, next: { revalidate: 60 } })
-    clearTimeout(timeout)
-    if (!res.ok) return []
-    const data = (await res.json()) as { results?: Array<{ id: number; title: string; authors?: Array<{ name: string }> }> }
-    const results = Array.isArray(data.results) ? data.results : []
-    if (type === 'authors') {
-      const seen = new Set<string>()
-      const items: Item[] = []
-      for (const b of results) {
-        for (const a of b.authors || []) {
-          const name = (a.name || '').trim()
-          if (name && !seen.has(name)) {
-            seen.add(name)
-            items.push({ id: name, title: name })
-            if (items.length >= limit) break
-          }
-        }
-        if (items.length >= limit) break
-      }
-      return items
-    }
-    return results.slice(0, limit).map((b) => ({ id: String(b.id), title: b.title, subtitle: (b.authors && b.authors.length > 0) ? b.authors.map(a => a.name).join(', ') : undefined }))
-  } catch {
-    clearTimeout(timeout)
-    return []
-  }
-}
+  // Lightweight ranking: prefer startsWith on title, then includes; then authors
+  function scoreRow(r: SupabaseSuggestion) {
+    const t = (r.title || '').toLowerCase()
+    const a = (r.authors || '').toLowerCase()
+    const ti = t.indexOf(normalizedQ)
+    const ai = a.indexOf(normalizedQ)
 
-function toItemsFromBooksValue(value: unknown, type: string, limit: number): Item[] {
-  const data = value as { results?: Array<{ id: number; title: string; authors?: Array<{ name: string }> }> }
-  const results = Array.isArray(data?.results) ? data.results : []
+    let score = 0
+    if (ti === 0) score += 300 // title starts with
+    else if (ti > 0) score += 200 - Math.min(ti, 100)
+
+    if (ai === 0) score += 120 // author starts with
+    else if (ai > 0) score += 80 - Math.min(ai, 80)
+
+    // Shorter titles get a small boost
+    score += Math.max(0, 40 - Math.min(t.length, 40))
+
+    return score
+  }
+
+  const ranked = list
+    .map(r => ({ r, s: scoreRow(r) }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .map(x => x.r)
+
+  // If author suggestions requested, bias ordering and shape accordingly
   if (type === 'authors') {
-    const seen = new Set<string>()
-    const items: Item[] = []
-    for (const b of results) {
-      for (const a of b.authors || []) {
-        const name = (a.name || '').trim()
-        if (name && !seen.has(name)) {
-          seen.add(name)
-          items.push({ id: name, title: name })
-          if (items.length >= limit) break
-        }
-      }
-      if (items.length >= limit) break
-    }
-    return items
+    ranked.sort((a, b) => {
+      const ai = (a.authors || '').toLowerCase().indexOf(normalizedQ)
+      const bi = (b.authors || '').toLowerCase().indexOf(normalizedQ)
+      const aw = ai === 0 ? 1 : ai > 0 ? 2 : 3
+      const bw = bi === 0 ? 1 : bi > 0 ? 2 : 3
+      if (aw !== bw) return aw - bw
+      return (a.authors || '').localeCompare(b.authors || '')
+    })
   }
-  return results.slice(0, limit).map((b) => ({ id: String(b.id), title: b.title, subtitle: (b.authors && b.authors.length > 0) ? b.authors.map(a => a.name).join(', ') : undefined }))
+
+  const items = ranked.slice(0, queryLimit).map((row) => ({
+    id: String(row.id),
+    title: type === 'authors' ? (row.authors || row.title) : row.title,
+    subtitle: type === 'authors' ? undefined : row.authors,
+  }))
+
+  return Response.json(items, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300', 'x-cache': 'stale' } })
 }
-
-async function refreshInBackground(cacheKey: string, q: string) {
-  try {
-    const res = await fetch(`https://gutendex.com/books?search=${encodeURIComponent(q.toLowerCase().trim())}&page=1`, { cache: 'no-store' })
-    if (!res.ok) return
-    const value = await res.json()
-    await supabaseAdmin!
-      .from('books_cache')
-      .upsert({ cache_key: cacheKey, value, expires_at: getExpiryIso(ONE_MONTH_SECONDS) })
-  } catch {}
-}
-
-
