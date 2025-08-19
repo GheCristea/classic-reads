@@ -90,8 +90,42 @@
     },
     {
       "friendlyName": "The Time Machine",
-      "author": "H.G. Wells",
+      "author": "H. G. Wells",
       "bookId": 35
+    }
+  ],
+  "Mysteries & Detective": [
+    {
+      "friendlyName": "A Study in Scarlet",
+      "author": "Arthur Conan Doyle",
+      "bookId": 244
+    },
+    {
+      "friendlyName": "The Mysterious Affair at Styles",
+      "author": "Agatha Christie",
+      "bookId": 863
+    },
+    {
+      "friendlyName": "The Sign of the Four",
+      "author": "Arthur Conan Doyle",
+      "bookId": 2097
+    }
+  ],
+  "Classics & Epics": [
+    {
+      "friendlyName": "War and Peace",
+      "author": "Leo Tolstoy",
+      "bookId": 2600
+    },
+    {
+      "friendlyName": "Anna Karenina",
+      "author": "Leo Tolstoy",
+      "bookId": 1399
+    },
+    {
+      "friendlyName": "The Count of Monte Cristo",
+      "author": "Alexandre Dumas",
+      "bookId": 1184
     }
   ]
 }
