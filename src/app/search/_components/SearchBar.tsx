@@ -7,7 +7,7 @@ export function SearchBar() {
     <SearchField 
       placeholder="Search for books, authors, or subjects..."
       size="lg"
-      showButton
+      showButton={false}
       className="w-full"
     />
   )

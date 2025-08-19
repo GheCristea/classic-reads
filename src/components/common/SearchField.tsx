@@ -20,6 +20,7 @@ interface SearchFieldProps {
   buildHref?: (query: string) => string
   onSearchSubmit?: () => void
   fetchSuggestions?: (query: string, limit: number) => Promise<SuggestionItem[]>
+  showSuggestions?: boolean
 }
 
 export function SearchField({
@@ -126,7 +127,7 @@ export function SearchField({
 
   return (
     <form onSubmit={handleSubmit} className={cn('w-full', className)}>
-      <div ref={containerRef} className="flex gap-2">
+      <div ref={containerRef} className="flex gap-2 flex-wrap">
         <div className="relative flex-1">
           <Search className={cn('absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground', size === 'lg' ? 'h-5 w-5' : '')} />
           <Input
